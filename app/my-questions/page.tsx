@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getUserQuestions, calcVoteStats, isExpired } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
+import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
 interface QuestionWithStats extends Question {
@@ -16,6 +17,7 @@ interface QuestionWithStats extends Question {
 
 export default function MyQuestionsPage() {
   const router = useRouter()
+  const { t } = useLang()
   const [questions, setQuestions] = useState<QuestionWithStats[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -49,7 +51,7 @@ export default function MyQuestionsPage() {
       <Navbar />
       <main className="pt-20 pb-12 px-4 max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">My Questions</h1>
+          <h1 className="text-2xl font-bold">{t('myq.title')}</h1>
           <Link href="/ask" className="btn-gradient px-4 py-2 rounded-full text-sm">
             + Ask
           </Link>
@@ -64,9 +66,9 @@ export default function MyQuestionsPage() {
         {!loading && questions.length === 0 && (
           <div className="text-center mt-16 text-gray-500">
             <div className="text-5xl mb-4">💬</div>
-            <p className="mb-4">還沒有發問過</p>
+            <p className="mb-4">{t('myq.empty')}</p>
             <Link href="/ask" className="btn-gradient px-6 py-3 rounded-2xl text-sm">
-              發第一個問題
+              {t('myq.emptyAction')}
             </Link>
           </div>
         )}
@@ -90,7 +92,7 @@ export default function MyQuestionsPage() {
                           : 'bg-white/8 text-gray-500'
                       }`}
                     >
-                      {active ? 'Live' : 'Ended'}
+                      {active ? t('myq.live') : t('myq.ended')}
                     </span>
                   </div>
 

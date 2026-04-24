@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
+import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
 function getEmotionalCopy(pctA: number, total: number): string {
@@ -22,6 +23,7 @@ function ResultContent() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { t } = useLang()
 
   const [question, setQuestion] = useState<Question | null>(null)
   const [stats, setStats] = useState({ total: 0, a: 0, b: 0, pctA: 0, pctB: 0 })
@@ -91,9 +93,7 @@ function ResultContent() {
       <main className="pt-20 pb-12 px-4 max-w-lg mx-auto">
         {isCreated && (
           <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 mb-6 text-center animate-slide-up">
-            <p className="text-green-400 text-sm font-medium">
-              🎉 問題已發出！等待大家投票中...
-            </p>
+            <p className="text-green-400 text-sm font-medium">{t('result.created')}</p>
           </div>
         )}
 
@@ -102,9 +102,9 @@ function ResultContent() {
             active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'
           }`}>
             {active && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
-            {active ? 'Live' : 'Ended'}
+            {active ? t('result.live') : t('result.ended')}
           </span>
-          {active && <span className="text-sm font-mono text-gray-400">{countdown} left</span>}
+          {active && <span className="text-sm font-mono text-gray-400">{countdown} {t('result.left')}</span>}
           {question.category && (
             <span className="px-3 py-1 rounded-full text-xs bg-white/8 text-gray-400">{question.category}</span>
           )}
@@ -116,8 +116,8 @@ function ResultContent() {
           <ResultBar label={question.option_a} percent={stats.pctA} count={stats.a} isWinner={stats.pctA >= stats.pctB} gradient />
           <ResultBar label={question.option_b} percent={stats.pctB} count={stats.b} isWinner={stats.pctB > stats.pctA} />
           <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
-            <span>{stats.total} votes total</span>
-            {active && <span className="text-gray-600">Updates every 15s</span>}
+            <span>{t('result.total', { n: stats.total })}</span>
+            {active && <span className="text-gray-600">{t('result.updates')}</span>}
           </div>
         </div>
 
@@ -127,15 +127,15 @@ function ResultContent() {
 
         <div className="flex gap-3">
           <Link href="/vote" className="flex-1 py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-sm hover:bg-white/5 transition-colors">
-            Keep Voting
+            {t('result.keepVoting')}
           </Link>
           <Link href="/ask" className="flex-1 btn-gradient py-3.5 rounded-2xl text-center text-sm">
-            Ask Another
+            {t('result.askAnother')}
           </Link>
         </div>
 
         <button className="w-full mt-3 py-3 rounded-2xl border border-white/8 text-gray-600 text-sm hover:bg-white/4 transition-colors">
-          Share result (coming soon)
+          {t('result.share')}
         </button>
       </main>
     </div>
