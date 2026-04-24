@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Props {
   question: string
@@ -14,260 +14,16 @@ interface Props {
   onClose: () => void
 }
 
-function gradientText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, w: number) {
-  const g = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0)
+const F = '-apple-system, system-ui, sans-serif'
+
+function gradientText(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number) {
+  const w = ctx.measureText(text).width
+  const g = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0)
   g.addColorStop(0, '#8B5CF6')
   g.addColorStop(0.5, '#EC4899')
   g.addColorStop(1, '#F97316')
   ctx.fillStyle = g
-  ctx.fillText(text, x, y)
-}
-
-function drawOptionRow(
-  ctx: CanvasRenderingContext2D,
-  label: string, pct: number, votes: number,
-  isWinner: boolean, rowY: number, rowW: number, rowX: number
-) {
-  const CIRCLE_R = 52
-  const circleX = rowX + CIRCLE_R
-  const circleY = rowY + CIRCLE_R
-
-  // Circle background
-  if (isWinner) {
-    const cg = ctx.createRadialGradient(circleX, circleY, 0, circleX, circleY, CIRCLE_R)
-    cg.addColorStop(0, '#9B73F7')
-    cg.addColorStop(1, '#EC4899')
-    ctx.fillStyle = cg
-  } else {
-    ctx.fillStyle = '#2A2A2E'
-  }
-  ctx.beginPath()
-  ctx.arc(circleX, circleY, CIRCLE_R, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Emoji
-  ctx.font = '52px serif'
-  ctx.textAlign = 'center'
-  ctx.fillText(isWinner ? '👍' : '👎', circleX, circleY + 18)
-
-  // Label text
-  const labelX = rowX + CIRCLE_R * 2 + 36
-  ctx.textAlign = 'left'
-  ctx.font = `${isWinner ? 'bold' : 'normal'} 48px -apple-system, system-ui, sans-serif`
-  ctx.fillStyle = isWinner ? '#FFFFFF' : '#6B7280'
-  ctx.fillText(label, labelX, rowY + 62)
-
-  // Percentage — large, right-aligned, gradient if winner
-  const pctStr = `${pct}%`
-  ctx.font = `bold 72px -apple-system, system-ui, sans-serif`
-  ctx.textAlign = 'right'
-  const pctX = rowX + rowW
-  if (isWinner) {
-    const pg = ctx.createLinearGradient(pctX - 200, 0, pctX, 0)
-    pg.addColorStop(0, '#EC4899')
-    pg.addColorStop(1, '#F97316')
-    ctx.fillStyle = pg
-  } else {
-    ctx.fillStyle = '#4B5563'
-  }
-  ctx.fillText(pctStr, pctX, rowY + 62)
-
-  // Vote count in parens
-  ctx.font = '34px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = isWinner ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'
-  ctx.fillText(`(${votes}票)`, pctX, rowY + 102)
-
-  // Progress bar
-  const BAR_Y = rowY + 120, BAR_H = 22, BAR_W = rowW - CIRCLE_R * 2 - 36
-  const BAR_X = labelX
-  ctx.fillStyle = 'rgba(255,255,255,0.07)'
-  roundRect(ctx, BAR_X, BAR_Y, BAR_W, BAR_H, BAR_H / 2)
-  ctx.fill()
-  if (pct > 0) {
-    if (isWinner) {
-      const bg = ctx.createLinearGradient(BAR_X, 0, BAR_X + BAR_W * (pct / 100), 0)
-      bg.addColorStop(0, '#7C3AED')
-      bg.addColorStop(0.5, '#EC4899')
-      bg.addColorStop(1, '#F97316')
-      ctx.fillStyle = bg
-    } else {
-      ctx.fillStyle = 'rgba(255,255,255,0.18)'
-    }
-    roundRect(ctx, BAR_X, BAR_Y, Math.max(BAR_W * (pct / 100), BAR_H), BAR_H, BAR_H / 2)
-    ctx.fill()
-  }
-}
-
-function generateImage(props: Omit<Props, 'onClose' | 'resultUrl' | 'displayName'> & { displayName?: string | null }): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const W = 1080, H = 1920
-    const canvas = document.createElement('canvas')
-    canvas.width = W; canvas.height = H
-    const ctx = canvas.getContext('2d')!
-    const F = '-apple-system, system-ui, sans-serif'
-
-    // ── Background: deep navy ──
-    ctx.fillStyle = '#0C0C14'
-    ctx.fillRect(0, 0, W, H)
-
-    // Purple glow top-left
-    const g1 = ctx.createRadialGradient(W * 0.1, H * 0.05, 0, W * 0.3, H * 0.2, W * 0.85)
-    g1.addColorStop(0, 'rgba(120,60,240,0.35)')
-    g1.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H)
-
-    // Orange/red glow bottom-right
-    const g2 = ctx.createRadialGradient(W * 0.9, H * 0.88, 0, W * 0.7, H * 0.75, W * 0.8)
-    g2.addColorStop(0, 'rgba(220,50,30,0.28)')
-    g2.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H)
-
-    // ── Top pill label ──
-    const PILL_Y = 110, PILL_H = 68, PILL_W = 520
-    const PILL_X = (W - PILL_W) / 2
-    ctx.fillStyle = 'rgba(255,255,255,0.08)'
-    roundRect(ctx, PILL_X, PILL_Y, PILL_W, PILL_H, PILL_H / 2)
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-    ctx.lineWidth = 1.5
-    ctx.stroke()
-
-    ctx.font = `38px ${F}`
-    ctx.textAlign = 'center'
-    ctx.fillStyle = 'rgba(255,255,255,0.75)'
-    const labelText = props.displayName ? `👤 ${props.displayName} 想知道大家怎麼想` : '👥 大家覺得呢？'
-    ctx.fillText(labelText, W / 2, PILL_Y + 44)
-
-    // ── Question text — large gradient ──
-    const Q_FONT_SIZE = 110
-    ctx.font = `bold ${Q_FONT_SIZE}px ${F}`
-    ctx.textAlign = 'center'
-    const qLines = wrapText(ctx, props.question, W - 120)
-    const Q_LINE_H = 126
-    const Q_START_Y = 260
-    qLines.forEach((line, i) => {
-      gradientText(ctx, line, W / 2, Q_START_Y + i * Q_LINE_H, W - 120)
-    })
-
-    // ── Sparkle decorations ──
-    const sparkleY = Q_START_Y + qLines.length * Q_LINE_H + 30
-    const sparkleColors = ['#8B5CF6', '#EC4899', '#F97316']
-    const sparkleXs = [W / 2 - 80, W / 2, W / 2 + 80]
-    sparkleXs.forEach((sx, si) => {
-      ctx.save()
-      ctx.translate(sx, sparkleY)
-      ctx.rotate(Math.PI / 4)
-      ctx.fillStyle = sparkleColors[si]
-      ctx.fillRect(-10, -10, 20, 20)
-      ctx.restore()
-    })
-
-    // ── Results card ──
-    const CARD_Y = sparkleY + 50
-    const CARD_X = 60, CARD_W = W - 120, CARD_R = 56
-    const ROW_H = 170  // height per option row
-    const CARD_PAD = 50
-    const CARD_INNER_W = CARD_W - CARD_PAD * 2
-    const CARD_H = ROW_H * 2 + 80 + CARD_PAD * 2 + 60  // rows + separator + padding + total
-
-    ctx.fillStyle = '#14141C'
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'
-    ctx.lineWidth = 1.5
-    roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R)
-    ctx.fill(); ctx.stroke()
-
-    // Option A
-    const aVotes = Math.round((props.pctA / 100) * props.totalVotes)
-    const bVotes = props.totalVotes - aVotes
-    drawOptionRow(ctx, props.optionA, props.pctA, aVotes, props.pctA >= props.pctB,
-      CARD_Y + CARD_PAD, CARD_INNER_W, CARD_X + CARD_PAD)
-
-    // Separator
-    const SEP_Y = CARD_Y + CARD_PAD + ROW_H + 10
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'
-    ctx.lineWidth = 1
-    ctx.setLineDash([8, 8])
-    ctx.beginPath()
-    ctx.moveTo(CARD_X + CARD_PAD, SEP_Y)
-    ctx.lineTo(CARD_X + CARD_W - CARD_PAD, SEP_Y)
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    // Option B
-    drawOptionRow(ctx, props.optionB, props.pctB, bVotes, props.pctB > props.pctA,
-      SEP_Y + 20, CARD_INNER_W, CARD_X + CARD_PAD)
-
-    // Total votes
-    const TOT_Y = SEP_Y + 20 + ROW_H + 20
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
-    ctx.lineWidth = 1
-    ctx.setLineDash([6, 6])
-    ctx.beginPath()
-    ctx.moveTo(CARD_X + CARD_PAD, TOT_Y)
-    ctx.lineTo(CARD_X + CARD_W - CARD_PAD, TOT_Y)
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    ctx.font = `36px ${F}`
-    ctx.textAlign = 'left'
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'
-    ctx.fillText(`👥  總投票數：${props.totalVotes} 票`, CARD_X + CARD_PAD, TOT_Y + 50)
-
-    // ── CTA ──
-    const CTA_Y = CARD_Y + CARD_H + 80
-    ctx.font = `bold 80px ${F}`
-    ctx.textAlign = 'center'
-    gradientText(ctx, '你也來投票！', W / 2, CTA_Y, 600)
-
-    ctx.font = `40px ${F}`
-    ctx.fillStyle = 'rgba(255,255,255,0.45)'
-    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, CTA_Y + 70)
-
-    // ── Footer pill ──
-    const FT_H = 150, FT_W = W - 100, FT_X = 50, FT_Y = H - 200
-    const ftg = ctx.createLinearGradient(FT_X, 0, FT_X + FT_W, 0)
-    ftg.addColorStop(0, '#6D28D9')
-    ftg.addColorStop(0.5, '#DB2777')
-    ftg.addColorStop(1, '#EA580C')
-    ctx.fillStyle = ftg
-    roundRect(ctx, FT_X, FT_Y, FT_W, FT_H, FT_H / 2)
-    ctx.fill()
-
-    // Circle icon
-    const IC_R = 48, IC_X = FT_X + 56 + IC_R, IC_Y = FT_Y + FT_H / 2
-    ctx.fillStyle = 'rgba(0,0,0,0.25)'
-    ctx.beginPath(); ctx.arc(IC_X, IC_Y, IC_R, 0, Math.PI * 2); ctx.fill()
-    ctx.font = '46px serif'
-    ctx.textAlign = 'center'
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillText('🔗', IC_X, IC_Y + 17)
-
-    // Domain text — two-tone: white "votesnap" + orange ".online"
-    const domX = IC_X + IC_R + 36
-    ctx.font = `bold 62px ${F}`
-    ctx.textAlign = 'left'
-    ctx.fillStyle = '#FFFFFF'
-    const vsW = ctx.measureText('votesnap').width
-    ctx.fillText('votesnap', domX, FT_Y + FT_H / 2 + 12)
-    ctx.fillStyle = '#FED7AA'
-    ctx.fillText('.online', domX + vsW, FT_Y + FT_H / 2 + 12)
-
-    canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas toBlob failed')), 'image/png')
-  })
-}
-
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
-  const words = text.split('')
-  const lines: string[] = []
-  let cur = ''
-  for (const ch of words) {
-    const test = cur + ch
-    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = ch }
-    else cur = test
-  }
-  if (cur) lines.push(cur)
-  return lines.length ? lines : [text]
+  ctx.fillText(text, cx, y)
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -284,101 +40,332 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const lines: string[] = []
+  let cur = ''
+  for (const ch of text) {
+    const test = cur + ch
+    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = ch }
+    else cur = test
+  }
+  if (cur) lines.push(cur)
+  return lines.length ? lines : [text]
+}
+
+// Row layout (matches Image #25):
+//   [Circle+emoji]  [Label text]               [XX%]
+//   [======= full-width progress bar =======] (NNN票)
+function drawOptionRow(
+  ctx: CanvasRenderingContext2D,
+  label: string, pct: number, votes: number,
+  isWinner: boolean, rowY: number, rowW: number, rowX: number
+) {
+  const R = 50
+  const CX = rowX + R
+  const LINE_Y = rowY + R  // vertical center of circle / text
+
+  // Circle
+  if (isWinner) {
+    const cg = ctx.createRadialGradient(CX, LINE_Y, 0, CX, LINE_Y, R)
+    cg.addColorStop(0, '#9B73F7'); cg.addColorStop(1, '#EC4899')
+    ctx.fillStyle = cg
+  } else {
+    ctx.fillStyle = '#272730'
+  }
+  ctx.beginPath(); ctx.arc(CX, LINE_Y, R, 0, Math.PI * 2); ctx.fill()
+
+  ctx.font = '48px serif'; ctx.textAlign = 'center'
+  ctx.fillText(isWinner ? '👍' : '👎', CX, LINE_Y + 17)
+
+  // Label
+  const LX = rowX + R * 2 + 28
+  ctx.font = `bold 52px ${F}`; ctx.textAlign = 'left'
+  ctx.fillStyle = isWinner ? '#FFFFFF' : '#6B7280'
+  ctx.fillText(label, LX, LINE_Y + 19)
+
+  // % (right-aligned, same line)
+  const RX = rowX + rowW
+  ctx.font = `bold 82px ${F}`; ctx.textAlign = 'right'
+  if (isWinner) {
+    const pw = ctx.measureText(`${pct}%`).width
+    const pg = ctx.createLinearGradient(RX - pw - 10, 0, RX, 0)
+    pg.addColorStop(0, '#EC4899'); pg.addColorStop(1, '#F97316')
+    ctx.fillStyle = pg
+  } else {
+    ctx.fillStyle = '#4B5563'
+  }
+  ctx.fillText(`${pct}%`, RX, LINE_Y + 19)
+
+  // Progress bar — full width, below circle bottom
+  const BY = LINE_Y + R + 18
+  const BH = 20
+  ctx.fillStyle = 'rgba(255,255,255,0.07)'
+  roundRect(ctx, rowX, BY, rowW, BH, BH / 2); ctx.fill()
+  if (pct > 0) {
+    const fillW = Math.max(rowW * (pct / 100), BH)
+    if (isWinner) {
+      const bg = ctx.createLinearGradient(rowX, 0, rowX + rowW, 0)
+      bg.addColorStop(0, '#7C3AED'); bg.addColorStop(0.5, '#EC4899'); bg.addColorStop(1, '#F97316')
+      ctx.fillStyle = bg
+    } else {
+      ctx.fillStyle = '#374151'
+    }
+    roundRect(ctx, rowX, BY, fillW, BH, BH / 2); ctx.fill()
+  }
+
+  // Vote count — right-aligned, below bar
+  ctx.font = `30px ${F}`; ctx.textAlign = 'right'
+  ctx.fillStyle = isWinner ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.22)'
+  ctx.fillText(`(${votes}票)`, RX, BY + BH + 38)
+}
+
+export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const W = 1080, H = 1920
+    const canvas = document.createElement('canvas')
+    canvas.width = W; canvas.height = H
+    const ctx = canvas.getContext('2d')!
+
+    // ── Background ──
+    ctx.fillStyle = '#0C0C18'
+    ctx.fillRect(0, 0, W, H)
+    const g1 = ctx.createRadialGradient(W * 0.05, H * 0.02, 0, W * 0.28, H * 0.22, W * 0.9)
+    g1.addColorStop(0, 'rgba(80,30,190,0.70)'); g1.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H)
+    const g2 = ctx.createRadialGradient(W * 0.95, H * 0.98, 0, W * 0.78, H * 0.82, W * 0.88)
+    g2.addColorStop(0, 'rgba(200,35,10,0.60)'); g2.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H)
+
+    // ── Pill badge ──
+    const pillLabel = props.displayName ? `👤 ${props.displayName} 想知道大家怎麼想` : '👥 大家覺得呢？'
+    ctx.font = `38px ${F}`
+    const pillTW = ctx.measureText(pillLabel).width
+    const PH = 68, PW = pillTW + 88, PX = (W - PW) / 2, PY = 96
+    ctx.fillStyle = 'rgba(255,255,255,0.09)'
+    roundRect(ctx, PX, PY, PW, PH, PH / 2); ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1.5
+    roundRect(ctx, PX, PY, PW, PH, PH / 2); ctx.stroke()
+    ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.85)'
+    ctx.fillText(pillLabel, W / 2, PY + PH / 2 + 14)
+
+    // ── Question text ──
+    const QFS = 128
+    ctx.font = `bold ${QFS}px ${F}`
+    ctx.textAlign = 'center'
+    const qLines = wrapText(ctx, props.question, W - 180)
+    const QLH = 146, QY = PY + PH + 68
+    qLines.forEach((line, i) => gradientText(ctx, line, W / 2, QY + i * QLH))
+    const qBottom = QY + qLines.length * QLH
+
+    // Tick decorations beside question
+    const qMidY = QY - QFS * 0.18 + (qLines.length * QLH) / 2
+    const tickDefs = [
+      { x: 58, dy: -72, angle: -0.52, color: '#8B5CF6', len: 54 },
+      { x: 36, dy: 2,   angle: -Math.PI / 8, color: '#EC4899', len: 44 },
+      { x: 78, dy: 66,  angle: 0.42, color: '#F97316', len: 34 },
+    ]
+    tickDefs.forEach(({ x, dy, angle, color, len }) => {
+      ;[1, -1].forEach(side => {
+        ctx.save()
+        ctx.translate(side === 1 ? x : W - x, qMidY + dy)
+        ctx.rotate(side === 1 ? angle : Math.PI - angle)
+        ctx.strokeStyle = color; ctx.lineWidth = 9; ctx.lineCap = 'round'
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len, 0); ctx.stroke()
+        ctx.restore()
+      })
+    })
+
+    // ── Sparkles (3 diamonds) ──
+    const sparkY = qBottom + 46
+    ;[W / 2 - 78, W / 2, W / 2 + 78].forEach((sx, si) => {
+      ctx.save(); ctx.translate(sx, sparkY); ctx.rotate(Math.PI / 4)
+      ctx.fillStyle = ['#7C3AED', '#EC4899', '#F97316'][si]
+      ctx.fillRect(-10, -10, 20, 20); ctx.restore()
+    })
+
+    // ── Card ──
+    // Row height: circle(100) + gap(18) + bar(20) + vote-text(38+bottom12) = ~188
+    const CARD_X = 48, CARD_W = W - 96
+    const CP = 50         // card padding
+    const ROW_H = 188
+    const SEP = 42        // space around separator line
+    const FOOT = 70       // total-votes footer row height
+    const CARD_H = CP + ROW_H + SEP + ROW_H + SEP + FOOT + CP
+    const CARD_Y = sparkY + 54
+
+    ctx.fillStyle = '#13131B'
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1.5
+    roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, 52); ctx.fill(); ctx.stroke()
+
+    const IW = CARD_W - CP * 2
+    const IRX = CARD_X + CP
+    const aV = Math.round((props.pctA / 100) * props.totalVotes)
+    const bV = props.totalVotes - aV
+
+    drawOptionRow(ctx, props.optionA, props.pctA, aV, props.pctA >= props.pctB, CARD_Y + CP, IW, IRX)
+
+    const S1Y = CARD_Y + CP + ROW_H + SEP / 2
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1
+    ctx.setLineDash([9, 9])
+    ctx.beginPath(); ctx.moveTo(CARD_X + CP, S1Y); ctx.lineTo(CARD_X + CARD_W - CP, S1Y); ctx.stroke()
+    ctx.setLineDash([])
+
+    drawOptionRow(ctx, props.optionB, props.pctB, bV, props.pctB > props.pctA, CARD_Y + CP + ROW_H + SEP, IW, IRX)
+
+    const S2Y = CARD_Y + CP + ROW_H + SEP + ROW_H + SEP / 2
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1
+    ctx.setLineDash([6, 6])
+    ctx.beginPath(); ctx.moveTo(CARD_X + CP, S2Y); ctx.lineTo(CARD_X + CARD_W - CP, S2Y); ctx.stroke()
+    ctx.setLineDash([])
+
+    ctx.font = `34px ${F}`; ctx.textAlign = 'left'
+    ctx.fillStyle = 'rgba(255,255,255,0.32)'
+    ctx.fillText(`👥  總投票數：${props.totalVotes} 票`, CARD_X + CP, S2Y + FOOT / 2 + 12)
+
+    // ── CTA ──
+    const cardBottom = CARD_Y + CARD_H
+    const FT_H = 152, FT_Y = H - FT_H - 54
+    // Place CTA centered between card bottom and footer
+    const ctaSpace = FT_Y - cardBottom
+    const CTA_Y = cardBottom + ctaSpace * 0.3
+
+    // Chevron side decorations
+    const chevDefs = [
+      { x: 78,  dy: 44, size: 52, color: '#8B5CF6' },
+      { x: 44,  dy: 48, size: 38, color: '#EC4899' },
+      { x: 118, dy: 82, size: 28, color: '#F97316' },
+    ]
+    chevDefs.forEach(({ x, dy, size, color }) => {
+      ;[1, -1].forEach(side => {
+        ctx.save()
+        ctx.globalAlpha = 0.30
+        ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+        const bx = side === 1 ? x : W - x
+        ctx.beginPath()
+        if (side === 1) {
+          ctx.moveTo(bx + size, CTA_Y + dy - size * 0.5)
+          ctx.lineTo(bx, CTA_Y + dy)
+          ctx.lineTo(bx + size, CTA_Y + dy + size * 0.5)
+        } else {
+          ctx.moveTo(bx - size, CTA_Y + dy - size * 0.5)
+          ctx.lineTo(bx, CTA_Y + dy)
+          ctx.lineTo(bx - size, CTA_Y + dy + size * 0.5)
+        }
+        ctx.stroke(); ctx.restore()
+      })
+    })
+
+    ctx.font = `bold 84px ${F}`; ctx.textAlign = 'center'
+    gradientText(ctx, '你也來投票！', W / 2, CTA_Y + 88)
+    ctx.font = `38px ${F}`; ctx.fillStyle = 'rgba(255,255,255,0.42)'
+    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, CTA_Y + 156)
+
+    // ── Footer pill ──
+    const FT_W = W - 80, FT_X = 40
+    const ftg = ctx.createLinearGradient(FT_X, 0, FT_X + FT_W, 0)
+    ftg.addColorStop(0, '#6D28D9'); ftg.addColorStop(0.5, '#DB2777'); ftg.addColorStop(1, '#EA580C')
+    ctx.fillStyle = ftg
+    roundRect(ctx, FT_X, FT_Y, FT_W, FT_H, FT_H / 2); ctx.fill()
+
+    const IR = 48, IX = FT_X + 58 + IR, IY = FT_Y + FT_H / 2
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'
+    ctx.beginPath(); ctx.arc(IX, IY, IR, 0, Math.PI * 2); ctx.fill()
+    ctx.font = '46px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#FFF'
+    ctx.fillText('🔗', IX, IY + 16)
+
+    const domX = IX + IR + 22
+    ctx.font = `bold 68px ${F}`; ctx.textAlign = 'left'; ctx.fillStyle = '#FFF'
+    const vsW = ctx.measureText('votesnap').width
+    ctx.fillText('votesnap', domX, IY + 20)
+    ctx.fillStyle = '#FED7AA'
+    ctx.fillText('.online', domX + vsW, IY + 20)
+    ctx.font = `28px ${F}`; ctx.fillStyle = 'rgba(255,255,255,0.55)'
+    ctx.fillText('做不了決定？世界幫你選', domX, IY + 56)
+
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+  })
+}
 
 export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, displayName, resultUrl, onClose }: Props) {
   const [savingImg, setSavingImg] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
   const shareUrl = `https://votesnap.online/result/${resultUrl.split('/result/')[1] ?? ''}`
   const shareText = `${displayName ? `${displayName} 問：` : ''}「${question}」\n${optionA} ${pctA}% vs ${optionB} ${pctB}%\n快來投票！👉 ${shareUrl}`
 
-  async function getImageBlob() {
-    return generateImage({ question, optionA, optionB, pctA, pctB, totalVotes, displayName })
-  }
-
-  async function shareToThreads() {
-    const url = `https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank')
-  }
-
-  async function shareToLine() {
-    const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank')
-  }
+  useEffect(() => {
+    let url = ''
+    generateShareImage({ question, optionA, optionB, pctA, pctB, totalVotes, displayName })
+      .then(blob => { url = URL.createObjectURL(blob); setPreviewUrl(url) })
+      .catch(console.error)
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function savePhoto() {
     setSavingImg(true)
     try {
-      const blob = await getImageBlob()
-      downloadBlob(blob)
+      const blob = await generateShareImage({ question, optionA, optionB, pctA, pctB, totalVotes, displayName })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'votesnap-result.png'
+      a.click()
+      URL.revokeObjectURL(a.href)
     } finally {
       setSavingImg(false)
     }
   }
 
-  function downloadBlob(blob: Blob) {
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'votesnap-result.png'
-    a.click()
-    URL.revokeObjectURL(a.href)
+  function shareToThreads() {
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, '_blank')
   }
+
+  function shareToLine() {
+    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank')
+  }
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         className="relative w-full sm:max-w-sm bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
           <h2 className="text-base font-bold text-white">分享結果</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition">
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        {/* Preview card — 9:16 thumbnail */}
-        <div className="flex justify-center mb-6">
-          <div
-            className="rounded-2xl overflow-hidden w-28"
-            style={{ aspectRatio: '9/16', background: '#0D0D10', border: '1px solid rgba(255,255,255,0.08)', position: 'relative' }}
-          >
-            <div className="h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400" />
-            <div className="p-2.5 flex flex-col" style={{ height: 'calc(100% - 4px)' }}>
-              <p className="text-[7px] font-bold mb-1.5">
-                <span className="text-violet-400">vote</span><span className="text-white">snap</span>
-              </p>
-              {displayName && <p className="text-[6px] text-gray-500 text-center mb-1">{displayName} 問</p>}
-              <p className="text-white font-bold text-[8px] leading-tight mb-2 text-center flex-1 flex items-center justify-center">{question}</p>
-              <div className="space-y-1 mb-1.5">
-                {[{ label: optionA, pct: pctA, winner: pctA >= pctB, gradient: true }, { label: optionB, pct: pctB, winner: pctB > pctA, gradient: false }].map(o => (
-                  <div key={o.label}>
-                    <div className="flex justify-between text-[6px] mb-0.5">
-                      <span className={o.winner ? 'text-white font-semibold' : 'text-gray-500'}>{o.label}</span>
-                      <span className={o.winner ? 'text-white font-bold' : 'text-gray-500'}>{o.pct}%</span>
-                    </div>
-                    <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-                      <div className={`h-full rounded-full ${o.gradient ? 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400' : 'bg-white/20'}`} style={{ width: `${o.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-gray-600 text-[5px]">共 {totalVotes} 票</p>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-5 flex items-center justify-center" style={{ background: 'linear-gradient(90deg,#7C3AED,#EC4899,#F97316)' }}>
-              <span className="text-white text-[5px] font-medium">votesnap.online</span>
-            </div>
-          </div>
+        {/* Preview — actual rendered canvas image */}
+        <div className="flex justify-center mb-5 px-6">
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="分享預覽"
+              className="rounded-2xl shadow-2xl"
+              style={{ height: 260, width: 'auto' }}
+            />
+          ) : (
+            <div
+              className="rounded-2xl bg-white/5 animate-pulse"
+              style={{ height: 260, aspectRatio: '9/16' }}
+            />
+          )}
         </div>
 
         {/* 3 share buttons */}
         <div className="px-8 pb-10 grid grid-cols-3 gap-6">
-          {/* Instagram — downloads image for IG Stories */}
           <button onClick={savePhoto} disabled={savingImg} className="flex flex-col items-center gap-2 disabled:opacity-50">
             <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
               <svg viewBox="0 0 24 24" className="w-16 h-16">
-                <defs><radialGradient id="ig2" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs>
-                <rect width="24" height="24" rx="6" fill="url(#ig2)"/>
+                <defs><radialGradient id="ig3" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs>
+                <rect width="24" height="24" rx="6" fill="url(#ig3)"/>
                 <path fill="white" d="M12 7a5 5 0 100 10A5 5 0 0012 7zm0 8a3 3 0 110-6 3 3 0 010 6zm5.2-8.8a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4z"/>
               </svg>
             </div>
@@ -388,7 +375,6 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
             </div>
           </button>
 
-          {/* Threads */}
           <button onClick={shareToThreads} className="flex flex-col items-center gap-2">
             <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
               <svg viewBox="0 0 24 24" className="w-16 h-16">
@@ -402,7 +388,6 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
             </div>
           </button>
 
-          {/* LINE */}
           <button onClick={shareToLine} className="flex flex-col items-center gap-2">
             <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
               <svg viewBox="0 0 24 24" className="w-16 h-16">
