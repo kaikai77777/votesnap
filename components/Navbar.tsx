@@ -9,7 +9,7 @@ import { useLang } from '@/lib/i18n'
 export function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { t, lang, toggle } = useLang()
+  const { t } = useLang()
 
   const NAV = [
     { href: '/vote', label: t('nav.vote') },
@@ -46,13 +46,6 @@ export function Navbar() {
               {label}
             </Link>
           ))}
-
-          <button
-            onClick={toggle}
-            className="ml-1 px-2.5 py-1.5 rounded-full text-xs font-bold border border-white/10 text-gray-400 hover:text-white hover:border-white/25 transition-colors"
-          >
-            {lang === 'zh' ? 'EN' : '中'}
-          </button>
 
           <button
             onClick={handleSignOut}
