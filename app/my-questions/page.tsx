@@ -40,6 +40,7 @@ export default function MyQuestionsPage() {
   const [tab, setTab] = useState<'asked' | 'voted'>('asked')
   const [questions, setQuestions] = useState<QuestionWithStats[]>([])
   const [votedQuestions, setVotedQuestions] = useState<VotedQuestion[]>([])
+  const [isPro, setIsPro] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const today = todayTaipei()
@@ -51,6 +52,10 @@ export default function MyQuestionsPage() {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
+
+      // Pro status
+      const { data: profile } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      setIsPro(profile?.is_pro ?? false)
 
       // Asked questions
       const { data: qs } = await getUserQuestions(user.id)
@@ -302,7 +307,42 @@ export default function MyQuestionsPage() {
         )}
 
         {/* ── Tab: Voted ── */}
-        {!loading && tab === 'voted' && (
+        {!loading && tab === 'voted' && !isPro && (
+          <div className="relative">
+            {/* Blurred preview */}
+            <div className="space-y-4 select-none pointer-events-none" style={{ filter: 'blur(6px)', opacity: 0.4 }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="card p-5">
+                  <div className="h-4 bg-white/10 rounded mb-3 w-3/4" />
+                  <div className="h-3 bg-white/8 rounded mb-4 w-1/3" />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2"><div className="w-6 h-2 bg-white/10 rounded" /><div className="flex-1 h-1.5 bg-white/10 rounded-full" /><div className="w-8 h-2 bg-white/10 rounded" /></div>
+                    <div className="flex items-center gap-2"><div className="w-6 h-2 bg-white/10 rounded" /><div className="flex-1 h-1.5 bg-white/10 rounded-full" /><div className="w-8 h-2 bg-white/10 rounded" /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Upgrade overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="bg-[#0F0F0F]/90 backdrop-blur-sm border border-white/10 rounded-2xl p-6 text-center mx-4 shadow-2xl">
+                <div className="text-3xl mb-3">🔒</div>
+                <h3 className="text-white font-bold text-lg mb-1">
+                  {isEn ? 'Pro Feature' : 'Pro 專屬功能'}
+                </h3>
+                <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+                  {isEn
+                    ? 'Upgrade to Pro to see all the questions you voted on and their results.'
+                    : '升級 Pro 即可查看你投票過的所有問題和即時結果。'}
+                </p>
+                <Link href="/pricing" className="btn-gradient px-6 py-3 rounded-2xl text-sm font-medium inline-block">
+                  {isEn ? 'Upgrade to Pro →' : '升級 Pro →'}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!loading && tab === 'voted' && isPro && (
           <>
             {votedQuestions.length === 0 ? (
               <div className="text-center mt-16 text-gray-500">
