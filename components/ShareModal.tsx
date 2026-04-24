@@ -208,15 +208,19 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
   }
 
   async function shareToInstagram() {
+    setSavingImg(true)
     try {
       const blob = await getImageBlob()
-      const file = new File([blob], 'votesnap.png', { type: 'image/png' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: question })
-      } else {
-        downloadBlob(blob)
-      }
-    } catch { /* user cancelled */ }
+      downloadBlob(blob)
+      // open Instagram app (deep link on mobile, falls back to web)
+      setTimeout(() => {
+        if (!window.open('instagram://', '_blank')) {
+          window.open('https://www.instagram.com', '_blank')
+        }
+      }, 300)
+    } finally {
+      setSavingImg(false)
+    }
   }
 
   async function shareToThreads() {
