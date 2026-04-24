@@ -15,9 +15,40 @@ interface QuestionWithStats extends Question {
   total: number
 }
 
+function formatDateLabel(dateStr: string, isEn: boolean): string {
+  const d = new Date(dateStr)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+
+  if (sameDay(d, today)) return isEn ? 'Today' : '今天'
+  if (sameDay(d, yesterday)) return isEn ? 'Yesterday' : '昨天'
+
+  if (isEn) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined })
+  }
+  return `${d.getMonth() + 1}月${d.getDate()}日${d.getFullYear() !== today.getFullYear() ? ` ${d.getFullYear()}` : ''}`
+}
+
+function groupByDate(questions: QuestionWithStats[]): { label: string; items: QuestionWithStats[] }[] {
+  const map = new Map<string, QuestionWithStats[]>()
+  for (const q of questions) {
+    const key = new Date(q.created_at).toDateString()
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(q)
+  }
+  return Array.from(map.entries()).map(([key, items]) => ({ label: key, items }))
+}
+
 export default function MyQuestionsPage() {
   const router = useRouter()
   const { t } = useLang()
+  const isEn = t('myq.title') === 'My Questions'
   const [questions, setQuestions] = useState<QuestionWithStats[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,13 +60,10 @@ export default function MyQuestionsPage() {
       const { data: qs } = await getUserQuestions(user.id)
       if (!qs) { setLoading(false); return }
 
-      // Fetch vote counts for all questions
       const withStats = await Promise.all(
         qs.map(async (q) => {
           const { data: votes } = await supabase
-            .from('votes')
-            .select('vote')
-            .eq('question_id', q.id)
+            .from('votes').select('vote').eq('question_id', q.id)
           const stats = calcVoteStats(votes ?? [])
           return { ...q, pctA: stats.pctA, pctB: stats.pctB, total: stats.total }
         })
@@ -46,6 +74,8 @@ export default function MyQuestionsPage() {
     })
   }, [router])
 
+  const groups = groupByDate(questions)
+
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       <Navbar />
@@ -53,7 +83,7 @@ export default function MyQuestionsPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">{t('myq.title')}</h1>
           <Link href="/ask" className="btn-gradient px-4 py-2 rounded-full text-sm">
-            + Ask
+            + {isEn ? 'Ask' : '發問'}
           </Link>
         </div>
 
@@ -73,63 +103,73 @@ export default function MyQuestionsPage() {
           </div>
         )}
 
-        <div className="space-y-3">
-          {questions.map((q) => {
-            const expired = isExpired(q.expires_at)
-            const active = !expired && q.status === 'active'
+        <div className="space-y-6">
+          {groups.map(({ label, items }) => (
+            <div key={label}>
+              {/* Date header */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-gray-600">📅</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {formatDateLabel(items[0].created_at, isEn)}
+                </span>
+                <div className="flex-1 h-px bg-white/5" />
+                <span className="text-xs text-gray-700">{items.length}</span>
+              </div>
 
-            return (
-              <Link key={q.id} href={`/result/${q.id}`}>
-                <div className="card p-5 hover:border-white/12 transition-colors cursor-pointer">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <p className="text-white font-medium text-sm leading-snug line-clamp-2">
-                      {q.question_text}
-                    </p>
-                    <span
-                      className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        active
-                          ? 'bg-green-500/15 text-green-400'
-                          : 'bg-white/8 text-gray-500'
-                      }`}
-                    >
-                      {active ? t('myq.live') : t('myq.ended')}
-                    </span>
-                  </div>
+              <div className="space-y-3">
+                {items.map((q) => {
+                  const expired = isExpired(q.expires_at)
+                  const active = !expired && q.status === 'active'
 
-                  {/* Mini result bars */}
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="w-6 text-gray-500">{q.option_a}</span>
-                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full gradient-bg rounded-full transition-all"
-                          style={{ width: `${q.pctA}%` }}
-                        />
+                  return (
+                    <Link key={q.id} href={`/result/${q.id}`}>
+                      <div className="card p-5 hover:border-white/12 transition-colors cursor-pointer">
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <p className="text-white font-medium text-sm leading-snug line-clamp-2">
+                            {q.question_text}
+                          </p>
+                          <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'
+                          }`}>
+                            {active ? t('myq.live') : t('myq.ended')}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 mb-3">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="w-6 text-gray-500 truncate">{q.option_a}</span>
+                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full gradient-bg rounded-full transition-all" style={{ width: `${q.pctA}%` }} />
+                            </div>
+                            <span className="w-8 text-right text-gray-400">{q.pctA}%</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="w-6 text-gray-500 truncate">{q.option_b}</span>
+                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-white/20 rounded-full transition-all" style={{ width: `${q.pctB}%` }} />
+                            </div>
+                            <span className="w-8 text-right text-gray-400">{q.pctB}%</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span>{q.total} {isEn ? 'votes' : '票'}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-700">
+                              {new Date(q.created_at).toLocaleTimeString(isEn ? 'en-US' : 'zh-TW', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {q.category && (
+                              <span className="bg-white/5 px-2 py-0.5 rounded-full">{q.category}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <span className="w-8 text-right text-gray-400">{q.pctA}%</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="w-6 text-gray-500">{q.option_b}</span>
-                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-white/20 rounded-full transition-all"
-                          style={{ width: `${q.pctB}%` }}
-                        />
-                      </div>
-                      <span className="w-8 text-right text-gray-400">{q.pctB}%</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-600">
-                    <span>{q.total} votes</span>
-                    {q.category && (
-                      <span className="bg-white/5 px-2 py-0.5 rounded-full">{q.category}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </main>
     </div>
