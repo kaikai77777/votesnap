@@ -10,35 +10,87 @@ import { VoteCard } from '@/components/VoteCard'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
+type DemoQuestion = Question & { isDemo: true }
+
+const DEMO_ZH: DemoQuestion[] = [
+  { id: 'demo-1', isDemo: true, user_id: '', question_text: '消夜要吃什麼？', option_a: '麥當勞', option_b: '豆漿店', category: '美食', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+  { id: 'demo-2', isDemo: true, user_id: '', question_text: '這週末要幹嘛？', option_a: '出去玩', option_b: '在家躺平', category: '生活', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+  { id: 'demo-3', isDemo: true, user_id: '', question_text: '現在要睡嗎？', option_a: '馬上睡', option_b: '再滑一下', category: '生活', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+]
+
+const DEMO_EN: DemoQuestion[] = [
+  { id: 'demo-1', isDemo: true, user_id: '', question_text: 'What to eat tonight?', option_a: "McDonald's", option_b: 'Night market', category: 'Food', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+  { id: 'demo-2', isDemo: true, user_id: '', question_text: 'This weekend?', option_a: 'Go out', option_b: 'Stay home', category: 'Life', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+  { id: 'demo-3', isDemo: true, user_id: '', question_text: 'Should I sleep now?', option_a: 'Sleep now', option_b: 'One more scroll', category: 'Life', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
+]
+
 export default function VotePage() {
   const router = useRouter()
   const { t } = useLang()
+  const isEn = t('vote.loading') === 'Loading questions...'
+
   const [userId, setUserId] = useState<string | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [lastVote, setLastVote] = useState<'A' | 'B' | null>(null)
+  const [showDemoEnd, setShowDemoEnd] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
       setUserId(user.id)
+
+      // Check if new user (0 votes ever)
+      const { count } = await supabase
+        .from('votes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      const isNewUser = (count ?? 0) === 0
+      const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
+
       const { data, error } = await getActiveQuestionsForVoting(user.id)
-      if (!error && data) setQuestions(data)
+      const real = (!error && data) ? data : []
+
+      setQuestions(isNewUser ? [...demos, ...real] : real)
       setLoading(false)
     })
-  }, [router])
+  }, [router, isEn])
 
   async function handleVote(vote: 'A' | 'B') {
     if (!userId || !questions[index]) return
-    await castVote(questions[index].id, userId, vote)
+    const q = questions[index] as DemoQuestion
+
+    if (!q.isDemo) {
+      await castVote(q.id, userId, vote)
+    }
+
     setLastVote(vote)
-    setTimeout(() => { setLastVote(null); setIndex((i) => i + 1) }, 600)
+
+    // Check if next card transitions from demo → real
+    const nextIndex = index + 1
+    const nextQ = questions[nextIndex] as DemoQuestion | undefined
+    const currentIsDemo = q.isDemo
+    const nextIsReal = nextQ && !nextQ.isDemo
+
+    if (currentIsDemo && nextIsReal) {
+      setTimeout(() => {
+        setLastVote(null)
+        setShowDemoEnd(true)
+        setTimeout(() => { setShowDemoEnd(false); setIndex(nextIndex) }, 1800)
+      }, 600)
+    } else {
+      setTimeout(() => { setLastVote(null); setIndex(nextIndex) }, 600)
+    }
   }
 
   const current = questions[index]
   const done = !loading && (!questions.length || index >= questions.length)
+  const isDemo = !!(current as DemoQuestion)?.isDemo
+  const demoCount = questions.filter(q => (q as DemoQuestion).isDemo).length
+  const realTotal = questions.length - demoCount
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -51,37 +103,60 @@ export default function VotePage() {
           </div>
         )}
 
+        {/* Demo → Real transition */}
+        {showDemoEnd && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm">
+            <div className="text-center animate-fade-in">
+              <div className="text-5xl mb-3">🎯</div>
+              <p className="text-white font-bold text-xl">{isEn ? 'Now the real ones!' : '換真實問題了！'}</p>
+              <p className="text-gray-400 text-sm mt-1">{isEn ? 'Help others decide' : '幫別人做決定'}</p>
+            </div>
+          </div>
+        )}
+
         {!loading && done && (
           <div className="text-center mt-16 animate-fade-in">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold mb-2">{t('vote.allDone')}</h2>
             <p className="text-gray-400 text-sm mb-8">{t('vote.allDoneSub')}</p>
             <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
-              <Link href="/ask" className="btn-gradient py-3.5 rounded-2xl text-center text-base">
-                {t('vote.askSomething')}
-              </Link>
-              <Link href="/my-questions" className="py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-base hover:bg-white/5 transition-colors">
-                {t('vote.myQ')}
-              </Link>
+              <Link href="/ask" className="btn-gradient py-3.5 rounded-2xl text-center text-base">{t('vote.askSomething')}</Link>
+              <Link href="/my-questions" className="py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-base hover:bg-white/5 transition-colors">{t('vote.myQ')}</Link>
             </div>
           </div>
         )}
 
-        {!loading && !done && current && (
+        {!loading && !done && current && !showDemoEnd && (
           <div className="w-full mt-4">
+            {/* Demo badge */}
+            {isDemo && (
+              <div className="flex items-center justify-center mb-3">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                  {isEn ? '✦ Try it out' : '✦ 先來試試看'}
+                </span>
+              </div>
+            )}
+
             {lastVote && (
               <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
                 <div className="text-6xl animate-fade-in">{lastVote === 'A' ? '👍' : '👎'}</div>
               </div>
             )}
-            <VoteCard question={current} onVote={handleVote} current={index + 1} total={questions.length} />
-            <p className="text-center text-gray-600 text-xs mt-6">
-              {t('vote.tip')}{' '}
-              <Link href="/my-questions" className="text-gray-400 underline underline-offset-2">
-                {t('nav.myQ')}
-              </Link>{' '}
-              {t('vote.tip2')}
-            </p>
+
+            <VoteCard
+              question={current}
+              onVote={handleVote}
+              current={isDemo ? index + 1 : index - demoCount + 1}
+              total={isDemo ? demoCount : realTotal}
+            />
+
+            {!isDemo && (
+              <p className="text-center text-gray-600 text-xs mt-6">
+                {t('vote.tip')}{' '}
+                <Link href="/my-questions" className="text-gray-400 underline underline-offset-2">{t('nav.myQ')}</Link>{' '}
+                {t('vote.tip2')}
+              </p>
+            )}
           </div>
         )}
       </main>
