@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { Logo, LogoWordmark } from '@/components/Logo'
+import { LogoWordmark } from '@/components/Logo'
 import { useLang } from '@/lib/i18n'
 
 const EXAMPLE_CARDS = [
-  { yes: 74, no: 26, votes: 312, zh: '要不要主動傳訊息給他？', en: 'Should I text first?' },
-  { yes: 58, no: 42, votes: 189, zh: '這件衣服值得買嗎？', en: 'Is this worth buying?' },
-  { yes: 61, no: 39, votes: 244, zh: '要不要辭掉這份工作？', en: 'Should I quit my job?' },
+  { yes: 74, no: 26, votes: 312, zh: '要不要主動傳訊息給他？', en: 'Should I text first?', optA: 'Yes', optB: 'No' },
+  { yes: 58, no: 42, votes: 189, zh: '這件衣服值得買嗎？', en: 'Is this worth buying?', optA: 'Yes', optB: 'No' },
+  { yes: 67, no: 33, votes: 201, zh: '消夜吃什麼？', en: 'What to eat tonight?', optA: '麥當勞', optB: '豆漿店' },
 ]
 
 export default function LandingPage() {
@@ -24,10 +24,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-b border-white/5">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo size={28} />
-            <LogoWordmark className="text-xl" />
-          </div>
+          <LogoWordmark className="text-xl" />
           <div className="flex items-center gap-3">
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
               {lang === 'zh' ? '定價' : 'Pricing'}
@@ -56,8 +53,7 @@ export default function LandingPage() {
             <span className="gradient-text">{t('land.h1b')}</span>
           </h1>
 
-          <p className="text-xl text-gray-400 mb-3 max-w-xl mx-auto">{t('land.sub')}</p>
-          <p className="text-base text-gray-600 mb-10">{t('land.sub2')}</p>
+          <p className="text-base text-gray-500 mb-10">{t('land.sub2')}</p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/login" className="btn-gradient px-8 py-4 text-base">{t('land.cta1')}</Link>
@@ -74,11 +70,11 @@ export default function LandingPage() {
               <p className="text-white font-medium mb-4 text-sm">{lang === 'zh' ? card.zh : card.en}</p>
               <div className="space-y-2">
                 <div>
-                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Yes</span><span>{card.yes}%</span></div>
+                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{card.optA}</span><span>{card.yes}%</span></div>
                   <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full gradient-bg rounded-full" style={{ width: `${card.yes}%` }} /></div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>No</span><span>{card.no}%</span></div>
+                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{card.optB}</span><span>{card.no}%</span></div>
                   <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full bg-white/20 rounded-full" style={{ width: `${card.no}%` }} /></div>
                 </div>
               </div>
@@ -106,22 +102,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 px-6 border-y border-white/5">
-        <div className="max-w-3xl mx-auto grid grid-cols-3 gap-8 text-center">
-          {[
-            { num: '10K+', label: t('land.stat1') },
-            { num: '150K+', label: t('land.stat2') },
-            { num: '<15min', label: t('land.stat3') },
-          ].map(({ num, label }) => (
-            <div key={label}>
-              <p className="text-3xl font-extrabold gradient-text">{num}</p>
-              <p className="text-gray-500 text-sm mt-1">{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Pricing CTA */}
       <section className="py-24 px-6 text-center">
         <div className="max-w-xl mx-auto">
@@ -139,7 +119,6 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6 text-center text-gray-600 text-sm">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Logo size={20} />
           <LogoWordmark className="text-base" />
         </div>
         <p>votesnap.online · {new Date().getFullYear()}</p>
