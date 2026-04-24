@@ -284,44 +284,13 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
       onClick: shareToThreads,
     },
     {
-      label: '複製連結',
-      icon: (
-        <div className="w-12 h-12 rounded-2xl bg-[#2C2C2E] flex items-center justify-center">
-          {copied ? (
-            <svg viewBox="0 0 24 24" className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-          ) : (
-            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-          )}
-        </div>
-      ),
-      onClick: copyLink,
-      rawIcon: true,
-    },
-    {
-      label: 'LINE',
-      icon: (
-        <svg viewBox="0 0 24 24" className="w-7 h-7"><rect width="24" height="24" rx="6" fill="#06C755"/><path fill="white" d="M12 4.5C7.86 4.5 4.5 7.3 4.5 10.75c0 2.95 2.62 5.42 6.16 5.89.24.05.57.16.65.36.07.18.05.47.02.65l-.1.62c-.03.18-.15.72.63.39.78-.33 4.2-2.47 5.73-4.23A5.1 5.1 0 0019.5 10.75C19.5 7.3 16.14 4.5 12 4.5zm-2.62 7.88H7.9a.38.38 0 01-.38-.38V9.25a.38.38 0 01.76 0v2.37h1.1a.38.38 0 010 .76zm1.37 0a.38.38 0 01-.76 0V9.25a.38.38 0 01.76 0v3.13zm3.4 0a.38.38 0 01-.34-.2l-1.43-1.95v1.77a.38.38 0 01-.76 0V9.25a.38.38 0 01.71-.2l1.44 1.96V9.25a.38.38 0 01.76 0v3.13a.38.38 0 01-.38.38v.02zm2.17 0h-1.5a.38.38 0 01-.38-.38V9.25a.38.38 0 01.76 0v2.75h1.12a.38.38 0 010 .76v.12z"/></svg>
-      ),
-      onClick: shareToLine,
-    },
-    {
-      label: savingImg ? '儲存中...' : '儲存照片',
+      label: savingImg ? '儲存中...' : '下載照片',
       icon: (
         <div className="w-12 h-12 rounded-2xl bg-[#2C2C2E] flex items-center justify-center">
           <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         </div>
       ),
       onClick: savePhoto,
-      rawIcon: true,
-    },
-    {
-      label: '更多',
-      icon: (
-        <div className="w-12 h-12 rounded-2xl bg-[#2C2C2E] flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12v.01M12 12v.01M20 12v.01M4 6v.01M12 6v.01M20 6v.01M4 18v.01M12 18v.01M20 18v.01"/></svg>
-        </div>
-      ),
-      onClick: shareMore,
       rawIcon: true,
     },
   ]
@@ -387,7 +356,7 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
         {/* Share buttons */}
         <div className="px-5 mb-4">
           <p className="text-gray-500 text-xs text-center mb-3">選擇分享方式</p>
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 gap-4">
             {shareActions.map(action => (
               <button key={action.label} onClick={action.onClick} className="flex flex-col items-center gap-1.5 group">
                 {action.rawIcon ? (
