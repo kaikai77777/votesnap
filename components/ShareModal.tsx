@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useState } from 'react'
 
 interface Props {
   question: string
@@ -199,12 +199,9 @@ function roundRectBottom(ctx: CanvasRenderingContext2D, x: number, y: number, w:
 }
 
 export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, displayName, resultUrl, onClose }: Props) {
-  const [copied, setCopied] = useState(false)
   const [savingImg, setSavingImg] = useState(false)
   const shareUrl = `https://votesnap.online/result/${resultUrl.split('/result/')[1] ?? ''}`
-  const [shareText, setShareText] = useState(
-    `${displayName ? `${displayName} 問：` : ''}「${question}」\n${optionA} ${pctA}% vs ${optionB} ${pctB}%\n快來投票！👉 ${shareUrl}`
-  )
+  const shareText = `${displayName ? `${displayName} 問：` : ''}「${question}」\n${optionA} ${pctA}% vs ${optionB} ${pctB}%\n快來投票！👉 ${shareUrl}`
 
   async function getImageBlob() {
     return generateImage({ question, optionA, optionB, pctA, pctB, totalVotes, displayName })
@@ -232,18 +229,6 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
     window.open(url, '_blank')
   }
 
-  async function copyLink() {
-    await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  async function copyText() {
-    await navigator.clipboard.writeText(shareText)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   async function savePhoto() {
     setSavingImg(true)
     try {
@@ -254,12 +239,6 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
     }
   }
 
-  async function shareMore() {
-    try {
-      await navigator.share({ title: question, text: shareText, url: shareUrl })
-    } catch { /* cancelled */ }
-  }
-
   function downloadBlob(blob: Blob) {
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
@@ -268,73 +247,38 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
     URL.revokeObjectURL(a.href)
   }
 
-  const shareActions = [
-    {
-      label: 'Instagram',
-      icon: (
-        <svg viewBox="0 0 24 24" className="w-7 h-7"><defs><radialGradient id="ig" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="url(#ig)"/><path fill="white" d="M12 7a5 5 0 100 10A5 5 0 0012 7zm0 8a3 3 0 110-6 3 3 0 010 6zm5.2-8.8a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4z"/></svg>
-      ),
-      onClick: shareToInstagram,
-    },
-    {
-      label: 'Threads',
-      icon: (
-        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white"><rect width="24" height="24" rx="6" fill="#000"/><path d="M16.26 11.44a4.54 4.54 0 00-.27-.12c-.16-2.17-1.3-3.41-3.28-3.42h-.03c-1.18 0-2.16.5-2.77 1.42l1.12.77c.45-.68 1.15-.82 1.65-.82h.02c.64 0 1.12.19 1.42.56.22.27.37.65.43 1.13a7.8 7.8 0 00-1.8-.1c-1.81.1-2.97 1.14-2.9 2.58.04.73.41 1.36.99 1.77.5.35 1.14.52 1.8.49 .88-.05 1.57-.4 2.07-1.03.38-.49.62-1.12.72-1.93.43.26.75.6.93 1.02.3.67.31 1.77-.6 2.68-.8.79-1.76 1.13-3.22 1.14-1.62-.01-2.84-.53-3.62-1.55-.74-.96-1.12-2.33-1.13-4.06.01-1.73.39-3.1 1.13-4.06.78-1.02 2-1.54 3.62-1.55 1.64.01 2.87.55 3.66 1.59.38.5.67 1.1.86 1.8l1.3-.35c-.23-.88-.6-1.64-1.1-2.27C15.36 6.68 13.81 6 11.93 6h-.04C10.02 6 8.46 6.68 7.4 7.98 6.46 9.15 5.98 10.8 5.97 12.82c.01 2.02.49 3.67 1.43 4.84C8.46 19.01 10.02 19.7 11.9 19.7h.04c1.7-.01 2.96-.46 3.97-1.46 1.32-1.3 1.28-2.93.84-3.93-.3-.68-.88-1.24-1.49-1.57v-.3zm-4.4 3.05c-.79.04-1.62-.31-1.65-1.09-.02-.58.41-1.22 1.74-1.3.15-.01.3-.01.44-.01.47 0 .91.05 1.31.13-.15 1.87-.98 2.23-1.84 2.27z" fill="white"/></svg>
-      ),
-      onClick: shareToThreads,
-    },
-    {
-      label: savingImg ? '儲存中...' : '下載照片',
-      icon: (
-        <div className="w-12 h-12 rounded-2xl bg-[#2C2C2E] flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        </div>
-      ),
-      onClick: savePhoto,
-      rawIcon: true,
-    },
-  ]
-
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative w-full sm:max-w-md bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+        className="relative w-full sm:max-w-sm bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-white">分享你的投票結果！</h2>
-            <p className="text-gray-400 text-sm mt-0.5">看看大家怎麼說，分享給朋友吧 🎉</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition shrink-0 mt-0.5">
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-white">分享結果</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition">
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
         {/* Preview card — 9:16 thumbnail */}
-        <div className="mx-5 mb-4 flex justify-center">
-          {/* aspect-[9/16] container, max height so it doesn't dominate the modal */}
+        <div className="flex justify-center mb-6">
           <div
-            className="rounded-2xl overflow-hidden w-36"
+            className="rounded-2xl overflow-hidden w-28"
             style={{ aspectRatio: '9/16', background: '#0D0D10', border: '1px solid rgba(255,255,255,0.08)', position: 'relative' }}
           >
-            {/* top gradient bar */}
             <div className="h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400" />
-            <div className="p-3 flex flex-col h-full">
-              {/* logo */}
-              <p className="text-[8px] font-bold mb-2">
+            <div className="p-2.5 flex flex-col" style={{ height: 'calc(100% - 4px)' }}>
+              <p className="text-[7px] font-bold mb-1.5">
                 <span className="text-violet-400">vote</span><span className="text-white">snap</span>
               </p>
-              {/* name + question */}
-              {displayName && <p className="text-[7px] text-gray-500 text-center mb-1">{displayName} 問</p>}
-              <p className="text-white font-bold text-[9px] leading-tight mb-3 text-center flex-1 flex items-center justify-center">{question}</p>
-              {/* bars */}
-              <div className="space-y-1.5 mb-2">
+              {displayName && <p className="text-[6px] text-gray-500 text-center mb-1">{displayName} 問</p>}
+              <p className="text-white font-bold text-[8px] leading-tight mb-2 text-center flex-1 flex items-center justify-center">{question}</p>
+              <div className="space-y-1 mb-1.5">
                 {[{ label: optionA, pct: pctA, winner: pctA >= pctB, gradient: true }, { label: optionB, pct: pctB, winner: pctB > pctA, gradient: false }].map(o => (
                   <div key={o.label}>
-                    <div className="flex justify-between text-[7px] mb-0.5">
+                    <div className="flex justify-between text-[6px] mb-0.5">
                       <span className={o.winner ? 'text-white font-semibold' : 'text-gray-500'}>{o.label}</span>
                       <span className={o.winner ? 'text-white font-bold' : 'text-gray-500'}>{o.pct}%</span>
                     </div>
@@ -344,49 +288,59 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
                   </div>
                 ))}
               </div>
-              <p className="text-gray-600 text-[6px] mb-1">共 {totalVotes} 票</p>
+              <p className="text-gray-600 text-[5px]">共 {totalVotes} 票</p>
             </div>
-            {/* footer */}
-            <div className="absolute bottom-0 left-0 right-0 h-6 flex items-center justify-center" style={{ background: 'linear-gradient(90deg,#7C3AED,#EC4899,#F97316)' }}>
-              <span className="text-white text-[6px] font-medium">votesnap.online</span>
+            <div className="absolute bottom-0 left-0 right-0 h-5 flex items-center justify-center" style={{ background: 'linear-gradient(90deg,#7C3AED,#EC4899,#F97316)' }}>
+              <span className="text-white text-[5px] font-medium">votesnap.online</span>
             </div>
           </div>
         </div>
 
-        {/* Share buttons */}
-        <div className="px-5 mb-4">
-          <p className="text-gray-500 text-xs text-center mb-3">選擇分享方式</p>
-          <div className="grid grid-cols-3 gap-4">
-            {shareActions.map(action => (
-              <button key={action.label} onClick={action.onClick} className="flex flex-col items-center gap-1.5 group">
-                {action.rawIcon ? (
-                  action.icon
-                ) : (
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center bg-[#2C2C2E] group-hover:opacity-80 transition">
-                    {action.icon}
-                  </div>
-                )}
-                <span className="text-gray-400 text-[10px] leading-tight text-center">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* 4 share buttons */}
+        <div className="px-6 pb-10 grid grid-cols-4 gap-3">
+          {/* 下載照片 */}
+          <button onClick={savePhoto} disabled={savingImg} className="flex flex-col items-center gap-2 disabled:opacity-50">
+            <div className="w-14 h-14 rounded-2xl bg-[#2C2C2E] flex items-center justify-center hover:bg-white/10 transition">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+            </div>
+            <span className="text-gray-400 text-[11px]">{savingImg ? '儲存中' : '下載照片'}</span>
+          </button>
 
-        {/* Share text */}
-        <div className="mx-5 mb-5 bg-[#2C2C2E] rounded-2xl p-4">
-          <p className="text-gray-500 text-xs mb-2">分享文字（可自訂）</p>
-          <textarea
-            value={shareText}
-            onChange={e => setShareText(e.target.value)}
-            rows={4}
-            className="w-full bg-transparent text-white text-sm resize-none focus:outline-none leading-relaxed"
-          />
-          <div className="flex justify-end mt-2">
-            <button onClick={copyText}
-              className="px-4 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs rounded-xl transition font-medium">
-              {copied ? '已複製 ✓' : '複製文字'}
-            </button>
-          </div>
+          {/* Instagram */}
+          <button onClick={shareToInstagram} className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
+              <svg viewBox="0 0 24 24" className="w-14 h-14">
+                <defs><radialGradient id="ig2" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs>
+                <rect width="24" height="24" rx="6" fill="url(#ig2)"/>
+                <path fill="white" d="M12 7a5 5 0 100 10A5 5 0 0012 7zm0 8a3 3 0 110-6 3 3 0 010 6zm5.2-8.8a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4z"/>
+              </svg>
+            </div>
+            <span className="text-gray-400 text-[11px]">Instagram</span>
+          </button>
+
+          {/* Threads */}
+          <button onClick={shareToThreads} className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
+              <svg viewBox="0 0 24 24" className="w-14 h-14">
+                <rect width="24" height="24" rx="6" fill="#000"/>
+                <path d="M16.26 11.44a4.54 4.54 0 00-.27-.12c-.16-2.17-1.3-3.41-3.28-3.42h-.03c-1.18 0-2.16.5-2.77 1.42l1.12.77c.45-.68 1.15-.82 1.65-.82h.02c.64 0 1.12.19 1.42.56.22.27.37.65.43 1.13a7.8 7.8 0 00-1.8-.1c-1.81.1-2.97 1.14-2.9 2.58.04.73.41 1.36.99 1.77.5.35 1.14.52 1.8.49.88-.05 1.57-.4 2.07-1.03.38-.49.62-1.12.72-1.93.43.26.75.6.93 1.02.3.67.31 1.77-.6 2.68-.8.79-1.76 1.13-3.22 1.14-1.62-.01-2.84-.53-3.62-1.55-.74-.96-1.12-2.33-1.13-4.06.01-1.73.39-3.1 1.13-4.06.78-1.02 2-1.54 3.62-1.55 1.64.01 2.87.55 3.66 1.59.38.5.67 1.1.86 1.8l1.3-.35c-.23-.88-.6-1.64-1.1-2.27C15.36 6.68 13.81 6 11.93 6h-.04C10.02 6 8.46 6.68 7.4 7.98 6.46 9.15 5.98 10.8 5.97 12.82c.01 2.02.49 3.67 1.43 4.84C8.46 19.01 10.02 19.7 11.9 19.7h.04c1.7-.01 2.96-.46 3.97-1.46 1.32-1.3 1.28-2.93.84-3.93-.3-.68-.88-1.24-1.49-1.57v-.3zm-4.4 3.05c-.79.04-1.62-.31-1.65-1.09-.02-.58.41-1.22 1.74-1.3.15-.01.3-.01.44-.01.47 0 .91.05 1.31.13-.15 1.87-.98 2.23-1.84 2.27z" fill="white"/>
+              </svg>
+            </div>
+            <span className="text-gray-400 text-[11px]">Threads</span>
+          </button>
+
+          {/* LINE */}
+          <button onClick={shareToLine} className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
+              <svg viewBox="0 0 24 24" className="w-14 h-14">
+                <rect width="24" height="24" rx="6" fill="#06C755"/>
+                <path fill="white" d="M12 4.5C7.86 4.5 4.5 7.3 4.5 10.75c0 2.95 2.62 5.42 6.16 5.89.24.05.57.16.65.36.07.18.05.47.02.65l-.1.62c-.03.18-.15.72.63.39.78-.33 4.2-2.47 5.73-4.23A5.1 5.1 0 0019.5 10.75C19.5 7.3 16.14 4.5 12 4.5zm-2.62 7.88H7.9a.38.38 0 01-.38-.38V9.25a.38.38 0 01.76 0v2.37h1.1a.38.38 0 010 .76zm1.37 0a.38.38 0 01-.76 0V9.25a.38.38 0 01.76 0v3.13zm3.4 0a.38.38 0 01-.34-.2l-1.43-1.95v1.77a.38.38 0 01-.76 0V9.25a.38.38 0 01.71-.2l1.44 1.96V9.25a.38.38 0 01.76 0v3.13a.38.38 0 01-.38.38v.02zm2.17 0h-1.5a.38.38 0 01-.38-.38V9.25a.38.38 0 01.76 0v2.75h1.12a.38.38 0 010 .76v.12z"/>
+              </svg>
+            </div>
+            <span className="text-gray-400 text-[11px]">LINE</span>
+          </button>
         </div>
       </div>
     </div>
