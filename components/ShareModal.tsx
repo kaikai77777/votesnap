@@ -15,7 +15,8 @@ interface Props {
 
 function generateImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const W = 1080, H = 1080
+    // 9:16 — Instagram Stories / Reels
+    const W = 1080, H = 1920
     const canvas = document.createElement('canvas')
     canvas.width = W; canvas.height = H
     const ctx = canvas.getContext('2d')!
@@ -24,65 +25,101 @@ function generateImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blo
     ctx.fillStyle = '#0D0D10'
     ctx.fillRect(0, 0, W, H)
 
-    // Subtle gradient overlay
-    const grad = ctx.createRadialGradient(W * 0.2, H * 0.2, 0, W * 0.5, H * 0.5, W * 0.8)
-    grad.addColorStop(0, 'rgba(139,92,246,0.15)')
+    // Radial glow top-left
+    const grad = ctx.createRadialGradient(W * 0.15, H * 0.12, 0, W * 0.5, H * 0.35, W * 0.9)
+    grad.addColorStop(0, 'rgba(139,92,246,0.18)')
     grad.addColorStop(1, 'rgba(0,0,0,0)')
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, W, H)
 
-    // Card background
-    const r = 48
-    ctx.fillStyle = '#18181C'
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'
-    ctx.lineWidth = 2
-    roundRect(ctx, 60, 60, W - 120, H - 180, r)
-    ctx.fill(); ctx.stroke()
+    // Radial glow bottom-right
+    const grad2 = ctx.createRadialGradient(W * 0.85, H * 0.75, 0, W * 0.5, H * 0.65, W * 0.9)
+    grad2.addColorStop(0, 'rgba(249,115,22,0.12)')
+    grad2.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = grad2
+    ctx.fillRect(0, 0, W, H)
 
-    // VoteSnap logo text
-    ctx.font = 'bold 44px -apple-system, system-ui, sans-serif'
+    // ── Top gradient bar ──
+    const topBar = ctx.createLinearGradient(0, 0, W, 0)
+    topBar.addColorStop(0, '#7C3AED')
+    topBar.addColorStop(0.5, '#EC4899')
+    topBar.addColorStop(1, '#F97316')
+    ctx.fillStyle = topBar
+    ctx.fillRect(0, 0, W, 12)
+
+    // ── Logo ──
+    const LOGO_Y = 120
+    ctx.font = 'bold 68px -apple-system, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    const voteW = ctx.measureText('vote').width
+    const snapW = ctx.measureText('snap').width
+    const totalW = voteW + snapW
+    const logoX = (W - totalW) / 2
     ctx.fillStyle = '#9B73F7'
     ctx.textAlign = 'left'
-    ctx.fillText('vote', 120, 168)
+    ctx.fillText('vote', logoX, LOGO_Y)
     ctx.fillStyle = '#FFFFFF'
-    ctx.fillText('snap', 120 + ctx.measureText('vote').width, 168)
+    ctx.fillText('snap', logoX + voteW, LOGO_Y)
 
-    // Question
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 72px -apple-system, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    const lines = wrapText(ctx, props.question, W - 240)
-    const lineH = 90
-    const textY = 340 - ((lines.length - 1) * lineH) / 2
-    lines.forEach((line, i) => ctx.fillText(line, W / 2, textY + i * lineH))
+    // ── Card ──
+    const CX = 80, CY = 200, CW = W - 160, CH = 1100, CR = 60
+    ctx.fillStyle = '#18181C'
+    ctx.strokeStyle = 'rgba(255,255,255,0.09)'
+    ctx.lineWidth = 2
+    roundRect(ctx, CX, CY, CW, CH, CR)
+    ctx.fill(); ctx.stroke()
 
-    // Bars
-    const barY = lines.length > 1 ? 540 : 480
-    drawBar(ctx, props.optionA, props.pctA, props.pctA >= props.pctB, true, 120, barY, W - 240)
-    drawBar(ctx, props.optionB, props.pctB, props.pctB > props.pctA, false, 120, barY + 160, W - 240)
-
-    // Total votes
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'
+    // Question label
+    ctx.fillStyle = 'rgba(255,255,255,0.3)'
     ctx.font = '36px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(`總投票數：${props.totalVotes} 票`, W / 2, barY + 330)
+    ctx.fillText('大家覺得呢？', W / 2, CY + 80)
 
-    // Footer gradient bar
-    const footerGrad = ctx.createLinearGradient(60, 0, W - 60, 0)
+    // Question text
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = 'bold 82px -apple-system, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    const lines = wrapText(ctx, props.question, CW - 100)
+    const lineH = 100
+    const textStartY = CY + 200
+    lines.forEach((line, i) => ctx.fillText(line, W / 2, textStartY + i * lineH))
+
+    // Bars
+    const barY = textStartY + lines.length * lineH + 80
+    drawBar(ctx, props.optionA, props.pctA, props.pctA >= props.pctB, true, CX + 60, barY, CW - 120)
+    drawBar(ctx, props.optionB, props.pctB, props.pctB > props.pctA, false, CX + 60, barY + 200, CW - 120)
+
+    // Total votes
+    ctx.fillStyle = 'rgba(255,255,255,0.3)'
+    ctx.font = '40px -apple-system, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(`共 ${props.totalVotes} 票`, W / 2, barY + 410)
+
+    // ── CTA section ──
+    const ctaY = CY + CH + 80
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = 'bold 56px -apple-system, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('你也來投票！', W / 2, ctaY)
+
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'
+    ctx.font = '42px -apple-system, system-ui, sans-serif'
+    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, ctaY + 70)
+
+    // ── Bottom gradient footer ──
+    const footerH = 140
+    const footerY = H - footerH
+    const footerGrad = ctx.createLinearGradient(0, 0, W, 0)
     footerGrad.addColorStop(0, '#7C3AED')
     footerGrad.addColorStop(0.5, '#EC4899')
     footerGrad.addColorStop(1, '#F97316')
     ctx.fillStyle = footerGrad
-    roundRectBottom(ctx, 60, H - 180, W - 120, 120, 48)
-    ctx.fill()
+    ctx.fillRect(0, footerY, W, footerH)
 
     ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 38px -apple-system, system-ui, sans-serif'
+    ctx.font = 'bold 52px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('votesnap.online', W / 2, H - 108)
-    ctx.font = '30px -apple-system, system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(255,255,255,0.75)'
-    ctx.fillText('做不了決定？丟到 VoteSnap，世界幫你選 ⚡', W / 2, H - 66)
+    ctx.fillText('votesnap.online', W / 2, footerY + 90)
 
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas toBlob failed')), 'image/png')
   })
@@ -304,36 +341,42 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
           </button>
         </div>
 
-        {/* Preview card */}
-        <div className="mx-5 mb-4 rounded-2xl overflow-hidden" style={{ background: '#0D0D10', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                </div>
-                <span className="text-xs font-bold"><span className="text-violet-400">vote</span><span className="text-white">snap</span></span>
+        {/* Preview card — 9:16 thumbnail */}
+        <div className="mx-5 mb-4 flex justify-center">
+          {/* aspect-[9/16] container, max height so it doesn't dominate the modal */}
+          <div
+            className="rounded-2xl overflow-hidden w-36"
+            style={{ aspectRatio: '9/16', background: '#0D0D10', border: '1px solid rgba(255,255,255,0.08)', position: 'relative' }}
+          >
+            {/* top gradient bar */}
+            <div className="h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400" />
+            <div className="p-3 flex flex-col h-full">
+              {/* logo */}
+              <p className="text-[8px] font-bold mb-2">
+                <span className="text-violet-400">vote</span><span className="text-white">snap</span>
+              </p>
+              {/* question */}
+              <p className="text-white font-bold text-[9px] leading-tight mb-3 text-center flex-1 flex items-center justify-center">{question}</p>
+              {/* bars */}
+              <div className="space-y-1.5 mb-2">
+                {[{ label: optionA, pct: pctA, winner: pctA >= pctB, gradient: true }, { label: optionB, pct: pctB, winner: pctB > pctA, gradient: false }].map(o => (
+                  <div key={o.label}>
+                    <div className="flex justify-between text-[7px] mb-0.5">
+                      <span className={o.winner ? 'text-white font-semibold' : 'text-gray-500'}>{o.label}</span>
+                      <span className={o.winner ? 'text-white font-bold' : 'text-gray-500'}>{o.pct}%</span>
+                    </div>
+                    <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                      <div className={`h-full rounded-full ${o.gradient ? 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400' : 'bg-white/20'}`} style={{ width: `${o.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="text-[10px] text-gray-500">已結束 · 結果</span>
+              <p className="text-gray-600 text-[6px] mb-1">共 {totalVotes} 票</p>
             </div>
-            <p className="text-white font-bold text-base mb-3 text-center">{question}</p>
-            <div className="space-y-2.5">
-              {[{ label: optionA, pct: pctA, winner: pctA >= pctB, gradient: true }, { label: optionB, pct: pctB, winner: pctB > pctA, gradient: false }].map(o => (
-                <div key={o.label}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className={o.winner ? 'text-white font-semibold' : 'text-gray-500'}>{o.label}</span>
-                    <span className={o.winner ? 'text-white font-bold' : 'text-gray-500'}>{o.pct}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div className={`h-full rounded-full ${o.gradient ? 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400' : 'bg-white/20'}`} style={{ width: `${o.pct}%` }} />
-                  </div>
-                </div>
-              ))}
+            {/* footer */}
+            <div className="absolute bottom-0 left-0 right-0 h-6 flex items-center justify-center" style={{ background: 'linear-gradient(90deg,#7C3AED,#EC4899,#F97316)' }}>
+              <span className="text-white text-[6px] font-medium">votesnap.online</span>
             </div>
-            <p className="text-gray-600 text-[10px] mt-2">總投票數：{totalVotes} 票</p>
-          </div>
-          <div className="h-10 flex items-center justify-center px-4" style={{ background: 'linear-gradient(90deg,#7C3AED,#EC4899,#F97316)' }}>
-            <span className="text-white text-xs font-medium">做不了決定？丟到 VoteSnap，世界幫你選 ⚡</span>
           </div>
         </div>
 
