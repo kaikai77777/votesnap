@@ -8,6 +8,7 @@ import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCo
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
+import { ShareModal } from '@/components/ShareModal'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
@@ -32,6 +33,7 @@ function ResultContent() {
   const [countdown, setCountdown] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showShare, setShowShare] = useState(false)
 
   const isCreated = searchParams.get('created') === 'true'
 
@@ -136,10 +138,26 @@ function ResultContent() {
           </Link>
         </div>
 
-        <button className="w-full mt-3 py-3 rounded-2xl border border-white/8 text-gray-600 text-sm hover:bg-white/4 transition-colors">
-          {t('result.share')}
+        <button
+          onClick={() => setShowShare(true)}
+          className="w-full mt-3 py-3 rounded-2xl border border-white/8 text-gray-300 text-sm hover:bg-white/5 transition-colors"
+        >
+          分享結果
         </button>
       </main>
+
+      {showShare && question && (
+        <ShareModal
+          question={question.question_text}
+          optionA={question.option_a}
+          optionB={question.option_b}
+          pctA={stats.pctA}
+          pctB={stats.pctB}
+          totalVotes={stats.total}
+          resultUrl={typeof window !== 'undefined' ? window.location.href : ''}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   )
 }

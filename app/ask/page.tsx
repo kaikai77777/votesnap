@@ -10,7 +10,7 @@ import { ImageUploader } from '@/components/ImageUploader'
 import { useLang } from '@/lib/i18n'
 import { CATEGORIES, CATEGORY_EN } from '@/types'
 
-const DAILY_LIMIT = 3
+const DAILY_LIMIT = 5
 const MAX_CHARS = 120
 
 export default function AskPage() {

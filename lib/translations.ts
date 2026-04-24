@@ -12,7 +12,7 @@ export const zh = {
   'land.s2t': '大家投票', 'land.s2d': '陌生人匿名幫你投票，沒有社交壓力。',
   'land.s3t': '快速得到答案', 'land.s3d': '10～15 分鐘內看到真實多數意見，幫助選擇障礙症人群。',
   'land.stat1': '今日發問', 'land.stat2': '累計投票', 'land.stat3': '平均結果',
-  'land.freeSub': '免費用戶每天可發 3 題。升級 Pro 解鎖無限發問與優先曝光。',
+  'land.freeSub': '免費用戶每天可發 5 題。升級 Pro 解鎖無限發問與優先曝光。',
   'land.startFree': '免費開始', 'land.seePricing': '查看定價',
   // Login
   'login.title': '開始使用',
@@ -27,7 +27,7 @@ export const zh = {
   'ob.interestsTitle': '你的興趣？', 'ob.interestsSub': '選多個，幫你推薦相關問題',
   'ob.skip': '跳過', 'ob.next': '下一步', 'ob.done': '完成 →', 'ob.saving': '儲存中...',
   // Ask
-  'ask.title': '發問', 'ask.remaining': '今日剩餘 {n} / 3 題',
+  'ask.title': '發問', 'ask.remaining': '今日剩餘 {n} / 5 題',
   'ask.upgradePro': '升級 Pro 解鎖無限',
   'ask.qLabel': '你的問題', 'ask.qPlaceholder': '例如：要不要主動傳訊息給他？',
   'ask.options': '選項', 'ask.optionA': '選項 A', 'ask.optionB': '選項 B',
@@ -35,7 +35,7 @@ export const zh = {
   'ask.images': '加入圖片（最多 3 張）', 'ask.imageHint': '點擊或拖曳圖片上傳',
   'ask.imageUploading': '上傳中...', 'ask.removeImage': '移除',
   'ask.submit': 'Snap a Vote →', 'ask.submitting': '發布中...',
-  'ask.errorEmpty': '請輸入問題內容', 'ask.errorLimit': '今日發問次數已達上限（Free: 3題）',
+  'ask.errorEmpty': '請輸入問題內容', 'ask.errorLimit': '今日發問次數已達上限（Free: 5題）',
   // Vote
   'vote.loading': '載入問題中...', 'vote.of': '/ {total} 個問題',
   'vote.allDone': '全部投完了！', 'vote.allDoneSub': '暫時沒有新問題了，來發一個吧！',
@@ -60,7 +60,7 @@ export const zh = {
   'price.faq': '常見問題',
   'price.faq1q': '問題到期後還能看嗎？', 'price.faq1a': '可以，結果會永久保留在我的問題頁面。',
   'price.faq2q': '投票是完全匿名的嗎？', 'price.faq2a': '是的，發問者只看得到投票比例，無法看到誰投了什麼。',
-  'price.faq3q': '每日 3 題的限制怎麼計算？', 'price.faq3a': '從每天 00:00 重置，Pro 用戶無限制。',
+  'price.faq3q': '每日 5 題的限制怎麼計算？', 'price.faq3a': '從每天 00:00 重置，Pro 用戶無限制。',
 }
 
 export const en = {
@@ -75,7 +75,7 @@ export const en = {
   'land.s2t': 'Crowd votes', 'land.s2d': 'Strangers vote anonymously. No social pressure.',
   'land.s3t': 'Get answers fast', 'land.s3d': 'See real majority opinion in 10–15 min.',
   'land.stat1': 'Questions today', 'land.stat2': 'Votes cast', 'land.stat3': 'Avg result time',
-  'land.freeSub': 'Free users get 3 questions/day. Upgrade Pro for unlimited.',
+  'land.freeSub': 'Free users get 5 questions/day. Upgrade Pro for unlimited.',
   'land.startFree': 'Start Free', 'land.seePricing': 'See Pricing',
   'login.title': 'Get started',
   'login.google': 'Continue with Google', 'login.connecting': 'Connecting...',
@@ -87,7 +87,7 @@ export const en = {
   'ob.genderTitle': 'Your gender?', 'ob.genderSub': 'Optional, no effect on usage',
   'ob.interestsTitle': 'Your interests?', 'ob.interestsSub': 'Pick multiple for better recommendations',
   'ob.skip': 'Skip', 'ob.next': 'Next', 'ob.done': 'Done →', 'ob.saving': 'Saving...',
-  'ask.title': 'Ask anything', 'ask.remaining': '{n} / 3 questions left today',
+  'ask.title': 'Ask anything', 'ask.remaining': '{n} / 5 questions left today',
   'ask.upgradePro': 'Upgrade Pro for unlimited',
   'ask.qLabel': 'Your question', 'ask.qPlaceholder': 'e.g. Should I text first?',
   'ask.options': 'Options', 'ask.optionA': 'Option A', 'ask.optionB': 'Option B',
@@ -95,7 +95,7 @@ export const en = {
   'ask.images': 'Add photos (up to 3)', 'ask.imageHint': 'Click or drag to upload',
   'ask.imageUploading': 'Uploading...', 'ask.removeImage': 'Remove',
   'ask.submit': 'Snap a Vote →', 'ask.submitting': 'Posting...',
-  'ask.errorEmpty': 'Please enter your question', 'ask.errorLimit': 'Daily limit reached (Free: 3/day)',
+  'ask.errorEmpty': 'Please enter your question', 'ask.errorLimit': 'Daily limit reached (Free: 5/day)',
   'vote.loading': 'Loading questions...', 'vote.of': '/ {total} questions',
   'vote.allDone': 'All caught up!', 'vote.allDoneSub': 'No more questions right now. Ask something!',
   'vote.askSomething': 'Ask Something →', 'vote.myQ': 'My Questions',
@@ -116,7 +116,7 @@ export const en = {
   'price.faq': 'FAQ',
   'price.faq1q': 'Can I see results after expiry?', 'price.faq1a': 'Yes, results are stored permanently in My Questions.',
   'price.faq2q': 'Is voting completely anonymous?', 'price.faq2a': 'Yes, question owners only see percentages, not who voted.',
-  'price.faq3q': 'How does the 3/day limit work?', 'price.faq3a': 'Resets at midnight. Pro users have no limit.',
+  'price.faq3q': 'How does the 5/day limit work?', 'price.faq3a': 'Resets at midnight. Pro users have no limit.',
 }
 
 export type LangDict = typeof zh
