@@ -153,7 +153,7 @@ export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>):
     ctx.font = `bold ${QFS}px ${F}`
     ctx.textAlign = 'center'
     const qLines = wrapText(ctx, props.question, W - 180)
-    const QLH = 146, QY = PY + PH + 68
+    const QLH = 146, QY = PY + PH + 148
     qLines.forEach((line, i) => gradientText(ctx, line, W / 2, QY + i * QLH))
     const qBottom = QY + qLines.length * QLH
 
@@ -276,11 +276,9 @@ export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>):
     const domX = IX + IR + 22
     ctx.font = `bold 68px ${F}`; ctx.textAlign = 'left'; ctx.fillStyle = '#FFF'
     const vsW = ctx.measureText('votesnap').width
-    ctx.fillText('votesnap', domX, IY + 20)
+    ctx.fillText('votesnap', domX, IY + 24)
     ctx.fillStyle = '#FED7AA'
-    ctx.fillText('.online', domX + vsW, IY + 20)
-    ctx.font = `28px ${F}`; ctx.fillStyle = 'rgba(255,255,255,0.55)'
-    ctx.fillText('做不了決定？世界幫你選', domX, IY + 56)
+    ctx.fillText('.online', domX + vsW, IY + 24)
 
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
   })
