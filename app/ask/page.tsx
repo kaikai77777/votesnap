@@ -139,7 +139,7 @@ export default function AskPage() {
                 {CATEGORIES.map((c) => (
                   <button key={c} type="button" onClick={() => setCategory(c)}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                      category === c ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-400 hover:border-white/20'
+                      category === c ? 'gradient-bg text-white' : 'border border-white/10 text-gray-400 hover:border-white/20'
                     }`}>{isEn ? (CATEGORY_EN[c] ?? c) : c}</button>
                 ))}
               </div>
@@ -149,8 +149,8 @@ export default function AskPage() {
               <div className="flex gap-2">
                 {[10, 15, 30].map((d) => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
-                    className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
-                      duration === d ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-300 hover:border-white/20'
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                      duration === d ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'
                     }`}>{t('ask.durationMin', { n: d })}</button>
                 ))}
               </div>

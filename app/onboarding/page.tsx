@@ -55,7 +55,7 @@ export default function OnboardingPage() {
               <div className="grid grid-cols-2 gap-2">
                 {AGE_RANGES.map((a) => (
                   <button key={a} onClick={() => setAge(a)}
-                    className={`py-3 rounded-xl border text-sm font-medium transition-all ${age === a ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-300 hover:border-white/20'}`}>
+                    className={`py-3 rounded-xl text-sm font-medium transition-all ${age === a ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'}`}>
                     {a}
                   </button>
                 ))}
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
               <div className="grid grid-cols-2 gap-2">
                 {GENDERS.map((g) => (
                   <button key={g} onClick={() => setGender(g)}
-                    className={`py-3 rounded-xl border text-sm font-medium transition-all ${gender === g ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-300 hover:border-white/20'}`}>
+                    className={`py-3 rounded-xl text-sm font-medium transition-all ${gender === g ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'}`}>
                     {g}
                   </button>
                 ))}
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               <div className="flex flex-wrap gap-2">
                 {INTERESTS.map((i) => (
                   <button key={i} onClick={() => toggleInterest(i)}
-                    className={`px-4 py-2 rounded-full text-sm border transition-all ${interests.includes(i) ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-300 hover:border-white/20'}`}>
+                    className={`px-4 py-2 rounded-full text-sm transition-all ${interests.includes(i) ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'}`}>
                     {i}
                   </button>
                 ))}
