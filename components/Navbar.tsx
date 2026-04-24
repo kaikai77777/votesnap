@@ -6,10 +6,11 @@ import { LogoWordmark } from './Logo'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/i18n'
 
+
 export function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { t } = useLang()
+  const { t, lang, toggle } = useLang()
 
   const NAV = [
     { href: '/vote',         label: t('nav.vote'), icon: '🗳️' },
@@ -59,13 +60,21 @@ export function Navbar() {
             </button>
           </div>
 
-          {/* Mobile: sign out icon only */}
-          <button
-            onClick={handleSignOut}
-            className="sm:hidden px-3 py-1.5 rounded-full text-xs font-medium bg-white/8 text-gray-500 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
-          >
-            {t('nav.signOut')}
-          </button>
+          {/* Mobile: lang toggle + sign out */}
+          <div className="sm:hidden flex items-center gap-2">
+            <button
+              onClick={toggle}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/8 text-gray-400 border border-white/8 transition-colors hover:bg-white/12"
+            >
+              🌐 {lang === 'zh' ? 'EN' : '中'}
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/8 text-gray-500 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
+            >
+              {t('nav.signOut')}
+            </button>
+          </div>
         </div>
       </nav>
 
