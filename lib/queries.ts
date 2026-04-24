@@ -55,21 +55,24 @@ export async function uploadQuestionImages(files: File[], questionId: string): P
     const ext = file.name.split('.').pop() ?? 'jpg'
     const path = `${questionId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('question-images')
       .upload(path, file, { cacheControl: '3600', upsert: false })
 
-    if (!error) {
+    if (uploadError) {
+      console.error('[upload] storage error:', uploadError)
+    } else {
       const { data } = supabase.storage.from('question-images').getPublicUrl(path)
       urls.push(data.publicUrl)
     }
   }
 
   if (urls.length > 0) {
-    await supabase
+    const { error: updateError } = await supabase
       .from('questions')
       .update({ image_urls: urls })
       .eq('id', questionId)
+    if (updateError) console.error('[upload] update error:', updateError)
   }
 
   return urls
