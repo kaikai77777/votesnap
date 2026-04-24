@@ -37,7 +37,7 @@ export interface QuestionWithVotes extends Question {
 
 export const CATEGORIES = [
   '愛情', '職場', '購物', '生活', '旅遊', '美食',
-  '健康', '科技', '運動', '其他',
+  '健康', '科技', '運動', '查看更多',
 ] as const
 
 export const AGE_RANGES = ['< 18', '18-24', '25-30', '31-40', '41+'] as const

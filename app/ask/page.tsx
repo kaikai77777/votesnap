@@ -54,7 +54,7 @@ export default function AskPage() {
       question_text: text.trim(),
       option_a: optionA || 'Yes',
       option_b: optionB || 'No',
-      category: category || '其他',
+      category: category || '查看更多',
       duration_minutes: duration,
     })
 

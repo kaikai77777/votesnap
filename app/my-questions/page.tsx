@@ -134,11 +134,26 @@ export default function MyQuestionsPage() {
               ›
             </button>
           </div>
+          {/* Back to today */}
+          {(viewYear !== parseInt(today.slice(0, 4)) || viewMonth !== parseInt(today.slice(5, 7)) - 1) && (
+            <div className="flex justify-center mb-3">
+              <button
+                onClick={() => {
+                  setViewYear(parseInt(today.slice(0, 4)))
+                  setViewMonth(parseInt(today.slice(5, 7)) - 1)
+                  setSelectedDate(today)
+                }}
+                className="px-4 py-1 rounded-full text-xs font-medium gradient-bg text-white"
+              >
+                {isEn ? '↩ Today' : '↩ 回今日'}
+              </button>
+            </div>
+          )}
 
           {/* Weekday headers */}
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((d, i) => (
-              <div key={d} className={`text-center text-xs py-1 font-medium ${i === 0 ? 'text-red-500/60' : 'text-gray-600'}`}>
+              <div key={d} className={`text-center text-xs py-1 font-medium ${i === 0 || i === 6 ? 'text-red-500/60' : 'text-gray-600'}`}>
                 {d}
               </div>
             ))}
@@ -155,7 +170,7 @@ export default function MyQuestionsPage() {
               const isSelected = dateStr === selectedDate
               const hasActive = qs.some(q => !isExpired(q.expires_at) && q.status === 'active')
               const hasEnded = qs.some(q => isExpired(q.expires_at) || q.status !== 'active')
-              const isSun = i % 7 === 0
+              const isWeekend = i % 7 === 0 || i % 7 === 6
 
               return (
                 <button
@@ -168,7 +183,7 @@ export default function MyQuestionsPage() {
                       ? 'gradient-bg text-white'
                       : isToday
                       ? 'border-2 border-violet-500 text-violet-300'
-                      : isSun
+                      : isWeekend
                       ? 'text-red-400/70'
                       : 'text-gray-300'
                   }`}>
