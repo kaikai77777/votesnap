@@ -221,7 +221,7 @@ export default function MyQuestionsPage() {
                 {isEn ? 'No questions on this day' : '這天沒有發問'}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {selectedQuestions.map((q) => {
                   const active = !isExpired(q.expires_at) && q.status === 'active'
                   return (
