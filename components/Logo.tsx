@@ -7,7 +7,7 @@ export function Logo({ size = 36 }: { size?: number }) {
       alt="VoteSnap"
       width={size}
       height={size}
-      className="object-contain"
+      className="object-contain mix-blend-screen"
     />
   )
 }
