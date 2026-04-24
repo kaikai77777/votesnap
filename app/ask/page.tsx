@@ -146,7 +146,7 @@ export default function AskPage() {
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">{t('ask.duration')}</label>
               <div className="flex gap-2">
-                {[10, 15].map((d) => (
+                {[10, 15, 30].map((d) => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
                     className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
                       duration === d ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-300 hover:border-white/20'
