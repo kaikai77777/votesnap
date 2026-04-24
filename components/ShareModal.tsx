@@ -200,6 +200,7 @@ function roundRectBottom(ctx: CanvasRenderingContext2D, x: number, y: number, w:
 
 export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, displayName, resultUrl, onClose }: Props) {
   const [savingImg, setSavingImg] = useState(false)
+  const [igSharing, setIgSharing] = useState(false)
   const shareUrl = `https://votesnap.online/result/${resultUrl.split('/result/')[1] ?? ''}`
   const shareText = `${displayName ? `${displayName} 問：` : ''}「${question}」\n${optionA} ${pctA}% vs ${optionB} ${pctB}%\n快來投票！👉 ${shareUrl}`
 
@@ -208,19 +209,20 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
   }
 
   async function shareToInstagram() {
-    setSavingImg(true)
+    setIgSharing(true)
     try {
       const blob = await getImageBlob()
-      downloadBlob(blob)
-      // open Instagram app (deep link on mobile, falls back to web)
-      setTimeout(() => {
-        if (!window.open('instagram://', '_blank')) {
-          window.open('https://www.instagram.com', '_blank')
-        }
-      }, 300)
-    } finally {
-      setSavingImg(false)
-    }
+      const file = new File([blob], 'votesnap-result.png', { type: 'image/png' })
+      // Web Share API with files — on mobile opens native share sheet showing Instagram
+      if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: question })
+      } else {
+        // Desktop fallback: download image and open Instagram
+        downloadBlob(blob)
+        window.open('https://www.instagram.com', '_blank')
+      }
+    } catch { /* user cancelled */ }
+    setIgSharing(false)
   }
 
   async function shareToThreads() {
@@ -313,7 +315,7 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
           </button>
 
           {/* Instagram */}
-          <button onClick={shareToInstagram} className="flex flex-col items-center gap-2">
+          <button onClick={shareToInstagram} disabled={igSharing} className="flex flex-col items-center gap-2 disabled:opacity-50">
             <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center hover:opacity-80 transition">
               <svg viewBox="0 0 24 24" className="w-14 h-14">
                 <defs><radialGradient id="ig2" cx="30%" cy="107%" r="150%"><stop offset="0%" stopColor="#fdf497"/><stop offset="5%" stopColor="#fdf497"/><stop offset="45%" stopColor="#fd5949"/><stop offset="60%" stopColor="#d6249f"/><stop offset="90%" stopColor="#285AEB"/></radialGradient></defs>
@@ -321,7 +323,7 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
                 <path fill="white" d="M12 7a5 5 0 100 10A5 5 0 0012 7zm0 8a3 3 0 110-6 3 3 0 010 6zm5.2-8.8a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4z"/>
               </svg>
             </div>
-            <span className="text-gray-400 text-[11px]">Instagram</span>
+            <span className="text-gray-400 text-[11px]">{igSharing ? '準備中' : 'Instagram'}</span>
           </button>
 
           {/* Threads */}
