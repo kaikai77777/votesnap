@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/vote'
 
   if (code) {
     const cookieStore = await cookies()
@@ -26,7 +25,21 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      // Check if this user has already completed onboarding
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('age_range')
+          .eq('id', user.id)
+          .single()
+
+        // New user (no profile data) → onboarding; returning user → vote
+        if (!profile?.age_range) {
+          return NextResponse.redirect(`${origin}/onboarding`)
+        }
+      }
+      return NextResponse.redirect(`${origin}/vote`)
     }
   }
 

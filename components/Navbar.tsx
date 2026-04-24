@@ -4,16 +4,18 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Logo, LogoWordmark } from './Logo'
 import { createClient } from '@/lib/supabase/client'
-
-const NAV = [
-  { href: '/vote', label: 'Vote' },
-  { href: '/ask', label: 'Ask' },
-  { href: '/my-questions', label: 'My Q\'s' },
-]
+import { useLang } from '@/lib/i18n'
 
 export function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { t, lang, toggle } = useLang()
+
+  const NAV = [
+    { href: '/vote', label: t('nav.vote') },
+    { href: '/ask', label: t('nav.ask') },
+    { href: '/my-questions', label: t('nav.myQ') },
+  ]
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -44,11 +46,19 @@ export function Navbar() {
               {label}
             </Link>
           ))}
+
+          <button
+            onClick={toggle}
+            className="ml-1 px-2.5 py-1.5 rounded-full text-xs font-bold border border-white/10 text-gray-400 hover:text-white hover:border-white/25 transition-colors"
+          >
+            {lang === 'zh' ? 'EN' : '中'}
+          </button>
+
           <button
             onClick={handleSignOut}
-            className="ml-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
           >
-            Out
+            {t('nav.signOut')}
           </button>
         </div>
       </div>

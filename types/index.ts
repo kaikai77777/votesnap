@@ -18,6 +18,7 @@ export interface Question {
   status: string
   expires_at: string
   created_at: string
+  image_urls: string[] | null
 }
 
 export interface Vote {

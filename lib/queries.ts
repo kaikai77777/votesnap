@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import type { Question, Profile } from '@/types'
+import type { Profile } from '@/types'
 
 export async function getActiveQuestionsForVoting(userId: string) {
   const supabase = createClient()
@@ -42,9 +42,37 @@ export async function createQuestion(payload: {
 
   return supabase
     .from('questions')
-    .insert({ ...payload, status: 'active', expires_at })
+    .insert({ ...payload, status: 'active', expires_at, image_urls: [] })
     .select()
     .single()
+}
+
+export async function uploadQuestionImages(files: File[], questionId: string): Promise<string[]> {
+  const supabase = createClient()
+  const urls: string[] = []
+
+  for (const file of files) {
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `${questionId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    const { error } = await supabase.storage
+      .from('question-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false })
+
+    if (!error) {
+      const { data } = supabase.storage.from('question-images').getPublicUrl(path)
+      urls.push(data.publicUrl)
+    }
+  }
+
+  if (urls.length > 0) {
+    await supabase
+      .from('questions')
+      .update({ image_urls: urls })
+      .eq('id', questionId)
+  }
+
+  return urls
 }
 
 export async function castVote(questionId: string, userId: string, vote: 'A' | 'B') {
