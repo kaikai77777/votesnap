@@ -8,7 +8,7 @@ import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCo
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
-import { ShareModal } from '@/components/ShareModal'
+import ShareModal from '@/components/ShareModal'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
