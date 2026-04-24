@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getUserQuestions, calcVoteStats, isExpired } from '@/lib/queries'
+import { getUserQuestions, calcVoteStats, isExpired, getProfile } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
+import ShareModal from '@/components/ShareModal'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
@@ -42,6 +43,8 @@ export default function MyQuestionsPage() {
   const [votedQuestions, setVotedQuestions] = useState<VotedQuestion[]>([])
   const [isPro, setIsPro] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [displayName, setDisplayName] = useState<string | null>(null)
+  const [shareQ, setShareQ] = useState<QuestionWithStats | null>(null)
 
   const today = todayTaipei()
   const [viewYear, setViewYear] = useState(() => parseInt(today.slice(0, 4)))
@@ -53,9 +56,10 @@ export default function MyQuestionsPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
 
-      // Pro status
-      const { data: profile } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      // Pro status + display name
+      const { data: profile } = await supabase.from('profiles').select('is_pro, display_name').eq('id', user.id).single()
       setIsPro(profile?.is_pro ?? false)
+      if (profile?.display_name) setDisplayName(profile.display_name)
 
       // Asked questions
       const { data: qs } = await getUserQuestions(user.id)
@@ -264,7 +268,14 @@ export default function MyQuestionsPage() {
                         <Link key={q.id} href={`/result/${q.id}`}>
                           <div className="card p-5 hover:border-white/12 transition-colors cursor-pointer">
                             <div className="flex items-start justify-between gap-3 mb-4">
-                              <p className="text-white font-medium text-sm leading-snug line-clamp-2">{q.question_text}</p>
+                              <div className="flex items-start gap-2 flex-1 min-w-0">
+                                <p className="text-white font-medium text-sm leading-snug line-clamp-2">{q.question_text}</p>
+                                {q.category && (
+                                  <span className="shrink-0 bg-white/8 text-gray-400 px-2 py-0.5 rounded-full text-xs mt-0.5">
+                                    {catLabel(q.category, isEn)}
+                                  </span>
+                                )}
+                              </div>
                               <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
                                 {active ? t('myq.live') : t('myq.ended')}
                               </span>
@@ -282,10 +293,12 @@ export default function MyQuestionsPage() {
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-600">
                               <span>{q.total} {isEn ? 'votes' : '票'}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-700">{formatTimeTaipei(q.created_at)}</span>
-                                {q.category && <span className="bg-white/5 px-2 py-0.5 rounded-full">{catLabel(q.category, isEn)}</span>}
-                              </div>
+                              <button
+                                onClick={e => { e.preventDefault(); e.stopPropagation(); setShareQ(q) }}
+                                className="px-3 py-1 rounded-full bg-white/8 text-gray-300 hover:bg-white/12 transition-colors text-xs font-medium"
+                              >
+                                {isEn ? 'Share' : '分享結果'}
+                              </button>
                             </div>
                           </div>
                         </Link>
@@ -404,6 +417,20 @@ export default function MyQuestionsPage() {
           </>
         )}
       </main>
+
+      {shareQ && (
+        <ShareModal
+          question={shareQ.question_text}
+          optionA={shareQ.option_a}
+          optionB={shareQ.option_b}
+          pctA={shareQ.pctA}
+          pctB={shareQ.pctB}
+          totalVotes={shareQ.total}
+          displayName={displayName}
+          resultUrl={`https://votesnap.online/result/${shareQ.id}`}
+          onClose={() => setShareQ(null)}
+        />
+      )}
     </div>
   )
 }
