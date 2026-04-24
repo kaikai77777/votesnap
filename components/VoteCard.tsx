@@ -44,8 +44,8 @@ export function VoteCard({ question, onVote, current, total }: VoteCardProps) {
       <div className="bg-[#141414] border border-white/8 rounded-2xl overflow-hidden shadow-2xl">
         {/* Image carousel */}
         {images.length > 0 && (
-          <div className="relative">
-            <img src={images[imgIndex]} alt="" className="w-full h-52 object-cover" />
+          <div className="relative overflow-hidden rounded-t-2xl">
+            <img src={images[imgIndex]} alt="" className="w-full h-52 object-cover block" />
             {images.length > 1 && (
               <>
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
