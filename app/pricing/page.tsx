@@ -10,12 +10,12 @@ export default function PricingPage() {
   const isEn = t('price.free') === 'Free'
 
   const FREE_FEATURES = isEn
-    ? ['3 questions/day', 'Standard exposure', 'Basic result page', 'Google login']
-    : ['每日 3 個問題', '標準曝光排序', '基本結果頁', 'Google 登入']
+    ? ['3 questions/day', 'Standard exposure', 'Basic result page']
+    : ['每日 3 個問題', '標準曝光排序', '基本結果頁']
 
   const PRO_FEATURES = isEn
-    ? ['Unlimited questions/day', '2× vote exposure', 'Priority distribution', 'Demographic breakdown', 'Question pinning']
-    : ['每日無限發問', '2× 投票曝光速度', '優先分發排序', '詳細人口統計', '問題置頂']
+    ? ['Unlimited questions/day', '2× vote exposure', 'Priority distribution', 'Demographic breakdown']
+    : ['每日無限發問', '2× 投票曝光速度', '優先分發排序', '詳細人口統計']
 
   const FAQS = [
     { q: t('price.faq1q'), a: t('price.faq1a') },
@@ -29,7 +29,10 @@ export default function PricingPage() {
 
       <main className="pt-24 pb-20 px-4">
         <div className="text-center mb-12 max-w-xl mx-auto">
-          <h1 className="text-4xl font-extrabold mb-4">{t('price.title')}</h1>
+          <h1 className="text-4xl font-extrabold mb-4">
+            {isEn ? 'Upgrade to ' : '升級 '}
+            <span className="bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Pro</span>
+          </h1>
           <p className="text-gray-400">{t('price.sub')}</p>
         </div>
 
