@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown } from '@/lib/queries'
+import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
@@ -34,6 +34,7 @@ function ResultContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showShare, setShowShare] = useState(false)
+  const [displayName, setDisplayName] = useState<string | null>(null)
 
   const isCreated = searchParams.get('created') === 'true'
 
@@ -48,9 +49,11 @@ function ResultContent() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
       fetchData()
+      const { data: profile } = await getProfile(user.id)
+      if (profile?.display_name) setDisplayName(profile.display_name)
     })
   }, [router, fetchData])
 
@@ -154,6 +157,7 @@ function ResultContent() {
           pctA={stats.pctA}
           pctB={stats.pctB}
           totalVotes={stats.total}
+          displayName={displayName}
           resultUrl={typeof window !== 'undefined' ? window.location.href : ''}
           onClose={() => setShowShare(false)}
         />

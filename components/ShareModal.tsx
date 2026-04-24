@@ -9,11 +9,12 @@ interface Props {
   pctA: number
   pctB: number
   totalVotes: number
+  displayName: string | null
   resultUrl: string
   onClose: () => void
 }
 
-function generateImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blob> {
+function generateImage(props: Omit<Props, 'onClose' | 'resultUrl' | 'displayName'> & { displayName?: string | null }): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // 9:16 — Instagram Stories / Reels
     const W = 1080, H = 1920
@@ -69,11 +70,12 @@ function generateImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blo
     roundRect(ctx, CX, CY, CW, CH, CR)
     ctx.fill(); ctx.stroke()
 
-    // Question label
+    // Question label — include name if available
     ctx.fillStyle = 'rgba(255,255,255,0.3)'
     ctx.font = '36px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('大家覺得呢？', W / 2, CY + 80)
+    const labelText = props.displayName ? `${props.displayName} 想知道大家怎麼想` : '大家覺得呢？'
+    ctx.fillText(labelText, W / 2, CY + 80)
 
     // Question text
     ctx.fillStyle = '#FFFFFF'
@@ -119,7 +121,7 @@ function generateImage(props: Omit<Props, 'onClose' | 'resultUrl'>): Promise<Blo
     ctx.fillStyle = '#FFFFFF'
     ctx.font = 'bold 52px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('votesnap.online', W / 2, footerY + 90)
+    ctx.fillText('🔗 votesnap.online', W / 2, footerY + 90)
 
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas toBlob failed')), 'image/png')
   })
@@ -196,15 +198,16 @@ function roundRectBottom(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath()
 }
 
-export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, resultUrl, onClose }: Props) {
+export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, displayName, resultUrl, onClose }: Props) {
   const [copied, setCopied] = useState(false)
   const [savingImg, setSavingImg] = useState(false)
+  const shareUrl = `https://votesnap.online/result/${resultUrl.split('/result/')[1] ?? ''}`
   const [shareText, setShareText] = useState(
-    `我在 VoteSnap 投票了：「${question}」\n結果是 ${optionA} ${pctA}% / ${optionB} ${pctB}% 😎\n快來投票，幫我做決定吧！\n👉 ${resultUrl}`
+    `${displayName ? `${displayName} 問：` : ''}「${question}」\n${optionA} ${pctA}% vs ${optionB} ${pctB}%\n快來投票！👉 ${shareUrl}`
   )
 
   async function getImageBlob() {
-    return generateImage({ question, optionA, optionB, pctA, pctB, totalVotes })
+    return generateImage({ question, optionA, optionB, pctA, pctB, totalVotes, displayName })
   }
 
   async function shareToInstagram() {
@@ -225,12 +228,12 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
   }
 
   async function shareToLine() {
-    const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(resultUrl)}&text=${encodeURIComponent(shareText)}`
+    const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`
     window.open(url, '_blank')
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(resultUrl)
+    await navigator.clipboard.writeText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -253,7 +256,7 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
 
   async function shareMore() {
     try {
-      await navigator.share({ title: question, text: shareText, url: resultUrl })
+      await navigator.share({ title: question, text: shareText, url: shareUrl })
     } catch { /* cancelled */ }
   }
 
@@ -355,7 +358,8 @@ export default function ShareModal({ question, optionA, optionB, pctA, pctB, tot
               <p className="text-[8px] font-bold mb-2">
                 <span className="text-violet-400">vote</span><span className="text-white">snap</span>
               </p>
-              {/* question */}
+              {/* name + question */}
+              {displayName && <p className="text-[7px] text-gray-500 text-center mb-1">{displayName} 問</p>}
               <p className="text-white font-bold text-[9px] leading-tight mb-3 text-center flex-1 flex items-center justify-center">{question}</p>
               {/* bars */}
               <div className="space-y-1.5 mb-2">

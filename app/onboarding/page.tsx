@@ -12,6 +12,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const { t } = useLang()
   const [step, setStep] = useState(0)
+  const [displayName, setDisplayName] = useState('')
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
   const [interests, setInterests] = useState<string[]>([])
@@ -28,7 +29,7 @@ export default function OnboardingPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      await upsertProfile({ id: user.id, age_range: age || null, gender: gender || null, interests: interests.length > 0 ? interests : [] })
+      await upsertProfile({ id: user.id, display_name: displayName.trim() || null, age_range: age || null, gender: gender || null, interests: interests.length > 0 ? interests : [] })
     }
     router.push('/vote')
   }
@@ -50,6 +51,21 @@ export default function OnboardingPage() {
         <div className="card p-6 animate-fade-in">
           {step === 0 && (
             <>
+              <h2 className="text-xl font-semibold mb-1">{t('ob.nameTitle')}</h2>
+              <p className="text-gray-500 text-sm mb-6">{t('ob.nameSub')}</p>
+              <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value.slice(0, 20))}
+                placeholder={t('ob.namePlaceholder')}
+                autoFocus
+                className="w-full bg-[#1E1E1E] rounded-xl px-4 py-4 text-white text-base focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder-gray-600"
+              />
+              <p className="text-right text-xs text-gray-600 mt-2">{displayName.length} / 20</p>
+            </>
+          )}
+          {step === 1 && (
+            <>
               <h2 className="text-xl font-semibold mb-1">{t('ob.ageTitle')}</h2>
               <p className="text-gray-500 text-sm mb-6">{t('ob.ageSub')}</p>
               <div className="grid grid-cols-2 gap-2">
@@ -62,7 +78,7 @@ export default function OnboardingPage() {
               </div>
             </>
           )}
-          {step === 1 && (
+          {step === 2 && (
             <>
               <h2 className="text-xl font-semibold mb-1">{t('ob.genderTitle')}</h2>
               <p className="text-gray-500 text-sm mb-6">{t('ob.genderSub')}</p>
@@ -76,7 +92,7 @@ export default function OnboardingPage() {
               </div>
             </>
           )}
-          {step === 2 && (
+          {step === 3 && (
             <>
               <h2 className="text-xl font-semibold mb-1">{t('ob.interestsTitle')}</h2>
               <p className="text-gray-500 text-sm mb-6">{t('ob.interestsSub')}</p>

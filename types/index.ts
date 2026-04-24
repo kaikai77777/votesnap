@@ -1,5 +1,6 @@
 export interface Profile {
   id: string
+  display_name: string | null
   age_range: string | null
   gender: string | null
   interests: string[] | null
