@@ -10,7 +10,7 @@ export const zh = {
   'land.how': '怎麼運作', 'land.howSub': '三步驟，快速得到答案',
   'land.s1t': '問任何問題', 'land.s1d': '發佈任何決定難題——消夜要吃什麼？',
   'land.s2t': '大家投票', 'land.s2d': '陌生人匿名幫你投票，沒有社交壓力。',
-  'land.s3t': '快速得到答案', 'land.s3d': '10～15 分鐘內看到真實多數意見。',
+  'land.s3t': '快速得到答案', 'land.s3d': '10～15 分鐘內看到真實多數意見，幫助選擇障礙症人群。',
   'land.stat1': '今日發問', 'land.stat2': '累計投票', 'land.stat3': '平均結果',
   'land.freeSub': '免費用戶每天可發 3 題。升級 Pro 解鎖無限發問與優先曝光。',
   'land.startFree': '免費開始', 'land.seePricing': '查看定價',
