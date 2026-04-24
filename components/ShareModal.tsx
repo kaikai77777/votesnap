@@ -14,150 +14,248 @@ interface Props {
   onClose: () => void
 }
 
+function gradientText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, w: number) {
+  const g = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0)
+  g.addColorStop(0, '#8B5CF6')
+  g.addColorStop(0.5, '#EC4899')
+  g.addColorStop(1, '#F97316')
+  ctx.fillStyle = g
+  ctx.fillText(text, x, y)
+}
+
+function drawOptionRow(
+  ctx: CanvasRenderingContext2D,
+  label: string, pct: number, votes: number,
+  isWinner: boolean, rowY: number, rowW: number, rowX: number
+) {
+  const CIRCLE_R = 52
+  const circleX = rowX + CIRCLE_R
+  const circleY = rowY + CIRCLE_R
+
+  // Circle background
+  if (isWinner) {
+    const cg = ctx.createRadialGradient(circleX, circleY, 0, circleX, circleY, CIRCLE_R)
+    cg.addColorStop(0, '#9B73F7')
+    cg.addColorStop(1, '#EC4899')
+    ctx.fillStyle = cg
+  } else {
+    ctx.fillStyle = '#2A2A2E'
+  }
+  ctx.beginPath()
+  ctx.arc(circleX, circleY, CIRCLE_R, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Emoji
+  ctx.font = '52px serif'
+  ctx.textAlign = 'center'
+  ctx.fillText(isWinner ? '👍' : '👎', circleX, circleY + 18)
+
+  // Label text
+  const labelX = rowX + CIRCLE_R * 2 + 36
+  ctx.textAlign = 'left'
+  ctx.font = `${isWinner ? 'bold' : 'normal'} 48px -apple-system, system-ui, sans-serif`
+  ctx.fillStyle = isWinner ? '#FFFFFF' : '#6B7280'
+  ctx.fillText(label, labelX, rowY + 62)
+
+  // Percentage — large, right-aligned, gradient if winner
+  const pctStr = `${pct}%`
+  ctx.font = `bold 72px -apple-system, system-ui, sans-serif`
+  ctx.textAlign = 'right'
+  const pctX = rowX + rowW
+  if (isWinner) {
+    const pg = ctx.createLinearGradient(pctX - 200, 0, pctX, 0)
+    pg.addColorStop(0, '#EC4899')
+    pg.addColorStop(1, '#F97316')
+    ctx.fillStyle = pg
+  } else {
+    ctx.fillStyle = '#4B5563'
+  }
+  ctx.fillText(pctStr, pctX, rowY + 62)
+
+  // Vote count in parens
+  ctx.font = '34px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = isWinner ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'
+  ctx.fillText(`(${votes}票)`, pctX, rowY + 102)
+
+  // Progress bar
+  const BAR_Y = rowY + 120, BAR_H = 22, BAR_W = rowW - CIRCLE_R * 2 - 36
+  const BAR_X = labelX
+  ctx.fillStyle = 'rgba(255,255,255,0.07)'
+  roundRect(ctx, BAR_X, BAR_Y, BAR_W, BAR_H, BAR_H / 2)
+  ctx.fill()
+  if (pct > 0) {
+    if (isWinner) {
+      const bg = ctx.createLinearGradient(BAR_X, 0, BAR_X + BAR_W * (pct / 100), 0)
+      bg.addColorStop(0, '#7C3AED')
+      bg.addColorStop(0.5, '#EC4899')
+      bg.addColorStop(1, '#F97316')
+      ctx.fillStyle = bg
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    }
+    roundRect(ctx, BAR_X, BAR_Y, Math.max(BAR_W * (pct / 100), BAR_H), BAR_H, BAR_H / 2)
+    ctx.fill()
+  }
+}
+
 function generateImage(props: Omit<Props, 'onClose' | 'resultUrl' | 'displayName'> & { displayName?: string | null }): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    // 9:16 — Instagram Stories / Reels
     const W = 1080, H = 1920
     const canvas = document.createElement('canvas')
     canvas.width = W; canvas.height = H
     const ctx = canvas.getContext('2d')!
+    const F = '-apple-system, system-ui, sans-serif'
 
-    // Background
-    ctx.fillStyle = '#0D0D10'
+    // ── Background: deep navy ──
+    ctx.fillStyle = '#0C0C14'
     ctx.fillRect(0, 0, W, H)
 
-    // Radial glow top-left
-    const grad = ctx.createRadialGradient(W * 0.15, H * 0.12, 0, W * 0.5, H * 0.35, W * 0.9)
-    grad.addColorStop(0, 'rgba(139,92,246,0.18)')
-    grad.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = grad
-    ctx.fillRect(0, 0, W, H)
+    // Purple glow top-left
+    const g1 = ctx.createRadialGradient(W * 0.1, H * 0.05, 0, W * 0.3, H * 0.2, W * 0.85)
+    g1.addColorStop(0, 'rgba(120,60,240,0.35)')
+    g1.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H)
 
-    // Radial glow bottom-right
-    const grad2 = ctx.createRadialGradient(W * 0.85, H * 0.75, 0, W * 0.5, H * 0.65, W * 0.9)
-    grad2.addColorStop(0, 'rgba(249,115,22,0.12)')
-    grad2.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = grad2
-    ctx.fillRect(0, 0, W, H)
+    // Orange/red glow bottom-right
+    const g2 = ctx.createRadialGradient(W * 0.9, H * 0.88, 0, W * 0.7, H * 0.75, W * 0.8)
+    g2.addColorStop(0, 'rgba(220,50,30,0.28)')
+    g2.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H)
 
-    // ── Top gradient bar ──
-    const topBar = ctx.createLinearGradient(0, 0, W, 0)
-    topBar.addColorStop(0, '#7C3AED')
-    topBar.addColorStop(0.5, '#EC4899')
-    topBar.addColorStop(1, '#F97316')
-    ctx.fillStyle = topBar
-    ctx.fillRect(0, 0, W, 12)
+    // ── Top pill label ──
+    const PILL_Y = 110, PILL_H = 68, PILL_W = 520
+    const PILL_X = (W - PILL_W) / 2
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'
+    roundRect(ctx, PILL_X, PILL_Y, PILL_W, PILL_H, PILL_H / 2)
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
 
-    // ── Logo ──
-    const LOGO_Y = 120
-    ctx.font = 'bold 68px -apple-system, system-ui, sans-serif'
+    ctx.font = `38px ${F}`
     ctx.textAlign = 'center'
-    const voteW = ctx.measureText('vote').width
-    const snapW = ctx.measureText('snap').width
-    const totalW = voteW + snapW
-    const logoX = (W - totalW) / 2
-    ctx.fillStyle = '#9B73F7'
-    ctx.textAlign = 'left'
-    ctx.fillText('vote', logoX, LOGO_Y)
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillText('snap', logoX + voteW, LOGO_Y)
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'
+    const labelText = props.displayName ? `👤 ${props.displayName} 想知道大家怎麼想` : '👥 大家覺得呢？'
+    ctx.fillText(labelText, W / 2, PILL_Y + 44)
 
-    // ── Card ──
-    const CX = 80, CY = 200, CW = W - 160, CH = 1100, CR = 60
-    ctx.fillStyle = '#18181C'
-    ctx.strokeStyle = 'rgba(255,255,255,0.09)'
-    ctx.lineWidth = 2
-    roundRect(ctx, CX, CY, CW, CH, CR)
+    // ── Question text — large gradient ──
+    const Q_FONT_SIZE = 110
+    ctx.font = `bold ${Q_FONT_SIZE}px ${F}`
+    ctx.textAlign = 'center'
+    const qLines = wrapText(ctx, props.question, W - 120)
+    const Q_LINE_H = 126
+    const Q_START_Y = 260
+    qLines.forEach((line, i) => {
+      gradientText(ctx, line, W / 2, Q_START_Y + i * Q_LINE_H, W - 120)
+    })
+
+    // ── Sparkle decorations ──
+    const sparkleY = Q_START_Y + qLines.length * Q_LINE_H + 30
+    const sparkleColors = ['#8B5CF6', '#EC4899', '#F97316']
+    const sparkleXs = [W / 2 - 80, W / 2, W / 2 + 80]
+    sparkleXs.forEach((sx, si) => {
+      ctx.save()
+      ctx.translate(sx, sparkleY)
+      ctx.rotate(Math.PI / 4)
+      ctx.fillStyle = sparkleColors[si]
+      ctx.fillRect(-10, -10, 20, 20)
+      ctx.restore()
+    })
+
+    // ── Results card ──
+    const CARD_Y = sparkleY + 50
+    const CARD_X = 60, CARD_W = W - 120, CARD_R = 56
+    const ROW_H = 170  // height per option row
+    const CARD_PAD = 50
+    const CARD_INNER_W = CARD_W - CARD_PAD * 2
+    const CARD_H = ROW_H * 2 + 80 + CARD_PAD * 2 + 60  // rows + separator + padding + total
+
+    ctx.fillStyle = '#14141C'
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+    ctx.lineWidth = 1.5
+    roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R)
     ctx.fill(); ctx.stroke()
 
-    // Question label — include name if available
-    ctx.fillStyle = 'rgba(255,255,255,0.3)'
-    ctx.font = '36px -apple-system, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    const labelText = props.displayName ? `${props.displayName} 想知道大家怎麼想` : '大家覺得呢？'
-    ctx.fillText(labelText, W / 2, CY + 80)
+    // Option A
+    const aVotes = Math.round((props.pctA / 100) * props.totalVotes)
+    const bVotes = props.totalVotes - aVotes
+    drawOptionRow(ctx, props.optionA, props.pctA, aVotes, props.pctA >= props.pctB,
+      CARD_Y + CARD_PAD, CARD_INNER_W, CARD_X + CARD_PAD)
 
-    // Question text
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 82px -apple-system, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    const lines = wrapText(ctx, props.question, CW - 100)
-    const lineH = 100
-    const textStartY = CY + 200
-    lines.forEach((line, i) => ctx.fillText(line, W / 2, textStartY + i * lineH))
+    // Separator
+    const SEP_Y = CARD_Y + CARD_PAD + ROW_H + 10
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([8, 8])
+    ctx.beginPath()
+    ctx.moveTo(CARD_X + CARD_PAD, SEP_Y)
+    ctx.lineTo(CARD_X + CARD_W - CARD_PAD, SEP_Y)
+    ctx.stroke()
+    ctx.setLineDash([])
 
-    // Bars
-    const barY = textStartY + lines.length * lineH + 80
-    drawBar(ctx, props.optionA, props.pctA, props.pctA >= props.pctB, true, CX + 60, barY, CW - 120)
-    drawBar(ctx, props.optionB, props.pctB, props.pctB > props.pctA, false, CX + 60, barY + 200, CW - 120)
+    // Option B
+    drawOptionRow(ctx, props.optionB, props.pctB, bVotes, props.pctB > props.pctA,
+      SEP_Y + 20, CARD_INNER_W, CARD_X + CARD_PAD)
 
     // Total votes
-    ctx.fillStyle = 'rgba(255,255,255,0.3)'
-    ctx.font = '40px -apple-system, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(`共 ${props.totalVotes} 票`, W / 2, barY + 410)
+    const TOT_Y = SEP_Y + 20 + ROW_H + 20
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([6, 6])
+    ctx.beginPath()
+    ctx.moveTo(CARD_X + CARD_PAD, TOT_Y)
+    ctx.lineTo(CARD_X + CARD_W - CARD_PAD, TOT_Y)
+    ctx.stroke()
+    ctx.setLineDash([])
 
-    // ── CTA section ──
-    const ctaY = CY + CH + 80
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 56px -apple-system, system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('你也來投票！', W / 2, ctaY)
+    ctx.font = `36px ${F}`
+    ctx.textAlign = 'left'
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'
+    ctx.fillText(`👥  總投票數：${props.totalVotes} 票`, CARD_X + CARD_PAD, TOT_Y + 50)
 
+    // ── CTA ──
+    const CTA_Y = CARD_Y + CARD_H + 80
+    ctx.font = `bold 80px ${F}`
+    ctx.textAlign = 'center'
+    gradientText(ctx, '你也來投票！', W / 2, CTA_Y, 600)
+
+    ctx.font = `40px ${F}`
     ctx.fillStyle = 'rgba(255,255,255,0.45)'
-    ctx.font = '42px -apple-system, system-ui, sans-serif'
-    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, ctaY + 70)
+    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, CTA_Y + 70)
 
-    // ── Bottom gradient footer ──
-    const footerH = 140
-    const footerY = H - footerH
-    const footerGrad = ctx.createLinearGradient(0, 0, W, 0)
-    footerGrad.addColorStop(0, '#7C3AED')
-    footerGrad.addColorStop(0.5, '#EC4899')
-    footerGrad.addColorStop(1, '#F97316')
-    ctx.fillStyle = footerGrad
-    ctx.fillRect(0, footerY, W, footerH)
+    // ── Footer pill ──
+    const FT_H = 150, FT_W = W - 100, FT_X = 50, FT_Y = H - 200
+    const ftg = ctx.createLinearGradient(FT_X, 0, FT_X + FT_W, 0)
+    ftg.addColorStop(0, '#6D28D9')
+    ftg.addColorStop(0.5, '#DB2777')
+    ftg.addColorStop(1, '#EA580C')
+    ctx.fillStyle = ftg
+    roundRect(ctx, FT_X, FT_Y, FT_W, FT_H, FT_H / 2)
+    ctx.fill()
 
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = 'bold 52px -apple-system, system-ui, sans-serif'
+    // Circle icon
+    const IC_R = 48, IC_X = FT_X + 56 + IC_R, IC_Y = FT_Y + FT_H / 2
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'
+    ctx.beginPath(); ctx.arc(IC_X, IC_Y, IC_R, 0, Math.PI * 2); ctx.fill()
+    ctx.font = '46px serif'
     ctx.textAlign = 'center'
-    ctx.fillText('🔗 votesnap.online', W / 2, footerY + 90)
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText('🔗', IC_X, IC_Y + 17)
+
+    // Domain text — two-tone: white "votesnap" + orange ".online"
+    const domX = IC_X + IC_R + 36
+    ctx.font = `bold 62px ${F}`
+    ctx.textAlign = 'left'
+    ctx.fillStyle = '#FFFFFF'
+    const vsW = ctx.measureText('votesnap').width
+    ctx.fillText('votesnap', domX, FT_Y + FT_H / 2 + 12)
+    ctx.fillStyle = '#FED7AA'
+    ctx.fillText('.online', domX + vsW, FT_Y + FT_H / 2 + 12)
 
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas toBlob failed')), 'image/png')
   })
 }
 
-function drawBar(ctx: CanvasRenderingContext2D, label: string, pct: number, isWinner: boolean, gradient: boolean, x: number, y: number, w: number) {
-  // Label + pct
-  ctx.textAlign = 'left'
-  ctx.font = `${isWinner ? 'bold' : 'normal'} 44px -apple-system, system-ui, sans-serif`
-  ctx.fillStyle = isWinner ? '#FFFFFF' : '#6B7280'
-  ctx.fillText(label, x, y)
-
-  ctx.textAlign = 'right'
-  ctx.font = `bold ${isWinner ? '56' : '44'}px -apple-system, system-ui, sans-serif`
-  ctx.fillStyle = isWinner ? '#FFFFFF' : '#4B5563'
-  ctx.fillText(`${pct}%`, x + w, y)
-
-  // Track
-  const barH = 28, barY = y + 20
-  ctx.fillStyle = 'rgba(255,255,255,0.07)'
-  roundRect(ctx, x, barY, w, barH, barH / 2)
-  ctx.fill()
-
-  // Fill
-  if (gradient) {
-    const g = ctx.createLinearGradient(x, 0, x + w * (pct / 100), 0)
-    g.addColorStop(0, '#7C3AED')
-    g.addColorStop(0.5, '#EC4899')
-    g.addColorStop(1, '#F97316')
-    ctx.fillStyle = g
-  } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.2)'
-  }
-  roundRect(ctx, x, barY, Math.max(w * (pct / 100), barH), barH, barH / 2)
-  ctx.fill()
-}
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
   const words = text.split('')
@@ -186,17 +284,6 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
-function roundRectBottom(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x, y)
-  ctx.lineTo(x + w, y)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
-  ctx.lineTo(x + r, y + h)
-  ctx.arcTo(x, y + h, x, y + h - r, r)
-  ctx.lineTo(x, y)
-  ctx.closePath()
-}
 
 export default function ShareModal({ question, optionA, optionB, pctA, pctB, totalVotes, displayName, resultUrl, onClose }: Props) {
   const [savingImg, setSavingImg] = useState(false)
