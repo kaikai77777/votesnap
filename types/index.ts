@@ -40,6 +40,12 @@ export const CATEGORIES = [
   '健康', '科技', '運動', '查看更多',
 ] as const
 
+export const CATEGORY_EN: Record<string, string> = {
+  '愛情': 'Love', '職場': 'Work', '購物': 'Shopping', '生活': 'Life',
+  '旅遊': 'Travel', '美食': 'Food', '健康': 'Health', '科技': 'Tech',
+  '運動': 'Sports', '查看更多': 'More', '其他': 'More',
+}
+
 export const AGE_RANGES = ['< 18', '18-24', '25-30', '31-40', '41+'] as const
 
 export const GENDERS = ['男', '女', '非二元', '不透露'] as const

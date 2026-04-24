@@ -8,7 +8,7 @@ import { createQuestion, uploadQuestionImages } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
 import { ImageUploader } from '@/components/ImageUploader'
 import { useLang } from '@/lib/i18n'
-import { CATEGORIES } from '@/types'
+import { CATEGORIES, CATEGORY_EN } from '@/types'
 
 const DAILY_LIMIT = 3
 const MAX_CHARS = 120
@@ -16,6 +16,7 @@ const MAX_CHARS = 120
 export default function AskPage() {
   const router = useRouter()
   const { t } = useLang()
+  const isEn = t('ask.title') === 'Ask anything'
   const [userId, setUserId] = useState<string | null>(null)
   const [text, setText] = useState('')
   const [optionA, setOptionA] = useState('Yes')
@@ -139,7 +140,7 @@ export default function AskPage() {
                   <button key={c} type="button" onClick={() => setCategory(c)}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       category === c ? 'gradient-bg border-transparent text-white' : 'border-white/10 text-gray-400 hover:border-white/20'
-                    }`}>{c}</button>
+                    }`}>{isEn ? (CATEGORY_EN[c] ?? c) : c}</button>
                 ))}
               </div>
             </div>

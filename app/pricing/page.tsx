@@ -14,8 +14,8 @@ export default function PricingPage() {
     : ['每日 3 個問題', '標準曝光排序', '基本結果頁']
 
   const PRO_FEATURES = isEn
-    ? ['Unlimited questions/day', '2× vote exposure', 'Priority distribution', 'Demographic breakdown']
-    : ['每日無限發問', '2× 投票曝光速度', '優先分發排序', '詳細人口統計']
+    ? ['Unlimited questions/day', '2× vote exposure', 'Priority distribution', 'Demographic breakdown', 'View your voting history & results']
+    : ['每日無限發問', '2× 投票曝光速度', '優先分發排序', '詳細人口統計', '查看自己投票過的結果']
 
   const FAQS = [
     { q: t('price.faq1q'), a: t('price.faq1a') },

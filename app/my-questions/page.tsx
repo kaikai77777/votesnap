@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getUserQuestions, calcVoteStats, isExpired } from '@/lib/queries'
+import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
@@ -253,7 +254,7 @@ export default function MyQuestionsPage() {
                           <span>{q.total} {isEn ? 'votes' : '票'}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-gray-700">{formatTimeTaipei(q.created_at)}</span>
-                            {q.category && <span className="bg-white/5 px-2 py-0.5 rounded-full">{q.category === '其他' ? '查看更多' : q.category}</span>}
+                            {q.category && <span className="bg-white/5 px-2 py-0.5 rounded-full">{isEn ? (CATEGORY_EN[q.category] ?? q.category) : q.category === '其他' ? '查看更多' : q.category}</span>}
                           </div>
                         </div>
                       </div>

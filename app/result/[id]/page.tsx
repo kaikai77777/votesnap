@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown } from '@/lib/queries'
+import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
 import { useLang } from '@/lib/i18n'
@@ -24,6 +25,7 @@ function ResultContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { t } = useLang()
+  const isEn = t('result.live') === 'Live'
 
   const [question, setQuestion] = useState<Question | null>(null)
   const [stats, setStats] = useState({ total: 0, a: 0, b: 0, pctA: 0, pctB: 0 })
@@ -106,7 +108,7 @@ function ResultContent() {
           </span>
           {active && <span className="text-sm font-mono text-gray-400">{countdown} {t('result.left')}</span>}
           {question.category && (
-            <span className="px-3 py-1 rounded-full text-xs bg-white/8 text-gray-400">{question.category === '其他' ? '查看更多' : question.category}</span>
+            <span className="px-3 py-1 rounded-full text-xs bg-white/8 text-gray-400">{isEn ? (CATEGORY_EN[question.category!] ?? question.category) : question.category === '其他' ? '查看更多' : question.category}</span>
           )}
         </div>
 
