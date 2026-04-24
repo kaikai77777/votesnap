@@ -80,7 +80,11 @@ export default function AskPage() {
           <h1 className="text-2xl font-bold">{t('ask.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {t('ask.remaining', { n: remaining })}
-            {remaining === 0 && <span className="text-orange-400 ml-2">— {t('ask.upgradePro')}</span>}
+            {remaining === 0 && (
+              <Link href="/pricing" className="text-orange-400 ml-2 hover:underline underline-offset-2">
+                — {t('ask.upgradePro')}
+              </Link>
+            )}
           </p>
         </div>
 

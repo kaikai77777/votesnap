@@ -15,6 +15,7 @@ export function Navbar() {
     { href: '/vote', label: t('nav.vote') },
     { href: '/ask', label: t('nav.ask') },
     { href: '/my-questions', label: t('nav.myQ') },
+    { href: '/pricing', label: '✦ Pro' },
   ]
 
   async function handleSignOut() {
@@ -38,7 +39,9 @@ export function Navbar() {
               key={href}
               href={href}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                pathname.startsWith(href)
+                href === '/pricing'
+                  ? 'gradient-bg text-white'
+                  : pathname.startsWith(href)
                   ? 'bg-white/10 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
@@ -49,7 +52,7 @@ export function Navbar() {
 
           <button
             onClick={handleSignOut}
-            className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+            className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium bg-white/8 text-gray-400 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
           >
             {t('nav.signOut')}
           </button>
