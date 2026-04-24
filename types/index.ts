@@ -37,13 +37,13 @@ export interface QuestionWithVotes extends Question {
 
 export const CATEGORIES = [
   '愛情', '職場', '購物', '生活', '旅遊', '美食',
-  '健康', '科技', '運動', '查看更多',
+  '健康', '科技', '運動', '其他',
 ] as const
 
 export const CATEGORY_EN: Record<string, string> = {
   '愛情': 'Love', '職場': 'Work', '購物': 'Shopping', '生活': 'Life',
   '旅遊': 'Travel', '美食': 'Food', '健康': 'Health', '科技': 'Tech',
-  '運動': 'Sports', '查看更多': 'More', '其他': 'More',
+  '運動': 'Sports', '其他': 'Other',
 }
 
 export const AGE_RANGES = ['< 18', '18-24', '25-30', '31-40', '41+'] as const

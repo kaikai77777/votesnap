@@ -108,7 +108,7 @@ function ResultContent() {
           </span>
           {active && <span className="text-sm font-mono text-gray-400">{countdown} {t('result.left')}</span>}
           {question.category && (
-            <span className="px-3 py-1 rounded-full text-xs bg-white/8 text-gray-400">{isEn ? (CATEGORY_EN[question.category!] ?? question.category) : question.category === '其他' ? '查看更多' : question.category}</span>
+            <span className="px-3 py-1 rounded-full text-xs bg-white/8 text-gray-400">{isEn ? (CATEGORY_EN[question.category!] ?? question.category) : question.category}</span>
           )}
         </div>
 

@@ -29,7 +29,7 @@ const formatTimeTaipei = (iso: string) =>
 function catLabel(cat: string | null, isEn: boolean) {
   if (!cat) return null
   if (isEn) return CATEGORY_EN[cat] ?? cat
-  return cat === '其他' ? '查看更多' : cat
+  return cat
 }
 
 export default function MyQuestionsPage() {
