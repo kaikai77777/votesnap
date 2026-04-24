@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { createQuestion, uploadQuestionImages } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
