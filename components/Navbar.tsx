@@ -64,6 +64,11 @@ export function Navbar() {
                 {label}
               </Link>
             ))}
+            {!isPro && (
+              <Link href="/pricing" className="px-3 py-1.5 rounded-full text-sm font-bold gradient-bg text-white ml-1">
+                ✦ Pro
+              </Link>
+            )}
             <button
               onClick={handleSignOut}
               className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium bg-white/8 text-gray-400 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
@@ -72,8 +77,13 @@ export function Navbar() {
             </button>
           </div>
 
-          {/* Mobile: lang toggle + sign out */}
+          {/* Mobile: Pro + lang toggle + sign out */}
           <div className="sm:hidden flex items-center gap-2">
+            {!isPro && (
+              <Link href="/pricing" className="px-3 py-1.5 rounded-full text-xs font-bold gradient-bg text-white">
+                ✦ Pro
+              </Link>
+            )}
             <button
               onClick={toggle}
               className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/8 text-gray-400 border border-white/8 transition-colors hover:bg-white/12"
