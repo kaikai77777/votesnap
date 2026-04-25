@@ -11,15 +11,15 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
   const now = new Date()
-  const fifteenAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
+  const dayAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000).toISOString()
 
-  // Questions that expired in the last 15 min
+  // All active questions that have expired (cron runs daily)
   const { data: expired } = await supabase
     .from('questions')
     .select('id, user_id, question_text, option_a, option_b')
     .eq('status', 'active')
     .lte('expires_at', now.toISOString())
-    .gte('expires_at', fifteenAgo)
+    .gte('expires_at', dayAgo)
 
   if (!expired || expired.length === 0) return NextResponse.json({ sent: 0 })
 
