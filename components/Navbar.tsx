@@ -25,11 +25,11 @@ export function Navbar() {
 
   const isEn = t('nav.vote') === 'Vote'
   const NAV = [
-    { href: '/vote',         label: t('nav.vote'),           icon: '🗳️' },
-    { href: '/ask',          label: t('nav.ask'),            icon: '✏️' },
-    { href: '/my-questions', label: t('nav.myQ'),            icon: '📋' },
+    { href: '/vote',         label: t('nav.vote'),             icon: '🗳️' },
+    { href: '/ask',          label: t('nav.ask'),              icon: '✏️' },
+    { href: '/trending',     label: isEn ? 'Hot' : '熱榜',    icon: '🔥' },
+    { href: '/my-questions', label: t('nav.myQ'),              icon: '📋' },
     { href: '/settings',     label: isEn ? 'Profile' : '設定', icon: '⚙️' },
-    { href: '/pricing',      label: 'Pro',                   icon: '✦'  },
   ]
 
   async function handleSignOut() {
@@ -56,9 +56,7 @@ export function Navbar() {
                 key={href}
                 href={href}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  href === '/pricing'
-                    ? 'gradient-bg text-white'
-                    : pathname.startsWith(href)
+                  pathname.startsWith(href)
                     ? 'bg-white/10 text-white'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
@@ -66,6 +64,9 @@ export function Navbar() {
                 {label}
               </Link>
             ))}
+            <Link href="/pricing" className="px-3 py-1.5 rounded-full text-sm font-medium gradient-bg text-white">
+              Pro
+            </Link>
             <button
               onClick={handleSignOut}
               className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium bg-white/8 text-gray-400 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
@@ -97,24 +98,15 @@ export function Navbar() {
         <div className="flex items-stretch h-16">
           {NAV.map(({ href, label, icon }) => {
             const active = pathname.startsWith(href)
-            const isPro = href === '/pricing'
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                  isPro
-                    ? 'text-fuchsia-400'
-                    : active
-                    ? 'text-white'
-                    : 'text-gray-600'
-                }`}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${active ? 'text-white' : 'text-gray-600'}`}
               >
-                <span className={`text-lg leading-none ${isPro && active ? 'gradient-text' : ''}`}>{icon}</span>
-                <span className={`text-[10px] font-medium ${isPro ? 'gradient-text' : ''}`}>{label}</span>
-                {active && !isPro && (
-                  <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
-                )}
+                <span className="text-lg leading-none">{icon}</span>
+                <span className="text-[10px] font-medium">{label}</span>
+                {active && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />}
               </Link>
             )
           })}

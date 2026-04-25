@@ -34,8 +34,11 @@ function ResultContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showShare, setShowShare] = useState(false)
+  const [showQr, setShowQr] = useState(false)
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [isPro, setIsPro] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [extending, setExtending] = useState(false)
   const [demographics, setDemographics] = useState<Awaited<ReturnType<typeof getDemographicStats>>>(null)
 
   const isCreated = searchParams.get('created') === 'true'
@@ -54,6 +57,7 @@ function ResultContent() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
       fetchData()
+      setCurrentUserId(user.id)
       const { data: profile } = await getProfile(user.id)
       if (profile?.display_name) setDisplayName(profile.display_name)
       if (profile?.is_pro) {
@@ -98,7 +102,24 @@ function ResultContent() {
 
   const expired = isExpired(question.expires_at)
   const active = !expired && question.status === 'active'
+  const isOwner = currentUserId === question.user_id
   const emotionalCopy = getEmotionalCopy(stats.pctA, stats.total)
+  const voteUrl = typeof window !== 'undefined' ? `${window.location.origin}/result/${id}` : `https://votesnap.online/result/${id}`
+
+  async function handleExtend() {
+    if (extending) return
+    setExtending(true)
+    const res = await fetch('/api/extend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: id }),
+    })
+    if (res.ok) {
+      const { expires_at } = await res.json()
+      setQuestion(q => q ? { ...q, expires_at } : q)
+    }
+    setExtending(false)
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -217,6 +238,40 @@ function ResultContent() {
         >
           分享結果
         </button>
+
+        {/* QR Code */}
+        <div className="mt-3">
+          <button
+            onClick={() => setShowQr(v => !v)}
+            className="w-full py-3 rounded-2xl border border-white/8 text-gray-500 text-sm hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>📱</span>
+            <span>{isEn ? 'QR Code to share' : '掃描分享 QR Code'}</span>
+            <span className="text-xs">{showQr ? '▲' : '▼'}</span>
+          </button>
+          {showQr && (
+            <div className="mt-2 bg-white rounded-2xl p-4 flex flex-col items-center gap-2">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(voteUrl)}&bgcolor=ffffff&color=000000&margin=2`}
+                alt="QR Code"
+                className="w-40 h-40"
+              />
+              <p className="text-black/60 text-xs text-center break-all">{voteUrl}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Extend time — Pro owner only */}
+        {isPro && isOwner && active && (
+          <button
+            onClick={handleExtend}
+            disabled={extending}
+            className="w-full mt-3 py-3 rounded-2xl border border-violet-500/30 text-violet-400 text-sm hover:bg-violet-500/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <span>⏱</span>
+            <span>{extending ? (isEn ? 'Extending...' : '延長中...') : (isEn ? 'Extend +30 min (Pro)' : '延長 30 分鐘 (Pro)')}</span>
+          </button>
+        )}
       </main>
 
       {showShare && question && (

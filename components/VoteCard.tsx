@@ -22,6 +22,8 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   const [countdown, setCountdown] = useState(formatCountdown(question.expires_at))
   const [imgIndex, setImgIndex] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+  const [reported, setReported] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   // Swipe state
   const touchStartX = useRef(0)
@@ -42,6 +44,17 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [lightbox])
+
+  async function handleReport() {
+    if (reported) return
+    await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: question.id, reason: 'user_report' }),
+    })
+    setReported(true)
+    setShowReport(false)
+  }
 
   async function handleVote(v: 'A' | 'B') {
     if (voting) return
@@ -141,11 +154,36 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
           )}
 
           <div className="p-6">
-            {question.category && (
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-white/8 text-gray-300 mb-4">
-                {question.category}
-              </span>
-            )}
+            <div className="flex items-start justify-between gap-2 mb-4">
+              <div>
+                {question.category && (
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-white/8 text-gray-300">
+                    {question.category}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowReport(s => !s)}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${reported ? 'text-orange-400' : 'text-gray-600 hover:text-gray-400'}`}
+                  title={isEn ? 'Report' : '檢舉'}
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                  </svg>
+                </button>
+                {showReport && !reported && (
+                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl p-3 shadow-xl w-44">
+                    <p className="text-xs text-gray-400 mb-2">{isEn ? 'Report this question?' : '檢舉此問題？'}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowReport(false)} className="flex-1 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 hover:bg-white/10">{isEn ? 'Cancel' : '取消'}</button>
+                      <button onClick={handleReport} className="flex-1 py-1.5 rounded-lg text-xs bg-orange-500/80 text-white hover:bg-orange-500">{isEn ? 'Report' : '檢舉'}</button>
+                    </div>
+                  </div>
+                )}
+                {reported && <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl px-3 py-2 text-xs text-orange-400 w-36 shadow-xl">{isEn ? 'Reported ✓' : '已檢舉 ✓'}</div>}
+              </div>
+            </div>
             <p className="text-white text-2xl font-semibold leading-snug mb-8 min-h-[60px]">
               {question.question_text}
             </p>

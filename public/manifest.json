@@ -1,0 +1,22 @@
+{
+  "name": "votesnap",
+  "short_name": "votesnap",
+  "description": "Can't decide? Snap a vote.",
+  "start_url": "/vote",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

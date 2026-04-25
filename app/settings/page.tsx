@@ -134,6 +134,31 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Add to home screen */}
+            <div className="card p-5">
+              <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                <span>📱</span>
+                {isEn ? 'Install App' : '安裝 App'}
+              </p>
+              <p className="text-gray-400 text-sm mb-3 leading-relaxed">
+                {isEn
+                  ? 'Add votesnap to your home screen for a full-screen app experience.'
+                  : '把 votesnap 加到主畫面，像原生 App 一樣使用，開啟更快。'}
+              </p>
+              <div className="bg-white/4 rounded-xl p-3 space-y-1.5 text-xs text-gray-500">
+                <p className="font-medium text-gray-400">{isEn ? 'iOS (Safari)' : 'iOS Safari'}</p>
+                <p>{isEn ? '1. Tap the Share button (□↑) at the bottom' : '1. 點底部的「分享」按鈕（□↑）'}</p>
+                <p>{isEn ? '2. Scroll down and tap "Add to Home Screen"' : '2. 下滑找到「加入主畫面」'}</p>
+                <p>{isEn ? '3. Tap "Add"' : '3. 點「新增」完成'}</p>
+              </div>
+              <div className="bg-white/4 rounded-xl p-3 space-y-1.5 text-xs text-gray-500 mt-2">
+                <p className="font-medium text-gray-400">{isEn ? 'Android (Chrome)' : 'Android Chrome'}</p>
+                <p>{isEn ? '1. Tap the menu (⋮) at the top right' : '1. 點右上角選單（⋮）'}</p>
+                <p>{isEn ? '2. Tap "Add to Home screen"' : '2. 點「加到主畫面」'}</p>
+                <p>{isEn ? '3. Tap "Add"' : '3. 點「新增」完成'}</p>
+              </div>
+            </div>
+
             {/* Rules link */}
             <div className="text-center pt-2">
               <Link href="/rules" className="text-gray-600 text-xs hover:text-gray-400 transition-colors underline underline-offset-2">
