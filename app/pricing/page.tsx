@@ -1,13 +1,38 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/lib/i18n'
 
 export default function PricingPage() {
   const { t } = useLang()
-
+  const router = useRouter()
   const isEn = t('price.free') === 'Free'
+
+  const [isPro, setIsPro] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      setIsPro(data?.is_pro ?? false)
+    })
+  }, [])
+
+  async function handleCancel() {
+    setCancelling(true)
+    await fetch('/api/cancel-pro', { method: 'POST' })
+    setDone(true)
+    setCancelling(false)
+    setTimeout(() => router.push('/vote'), 2000)
+  }
 
   const FREE_FEATURES = isEn
     ? ['3 questions/day', 'Standard exposure', 'Basic result page']
@@ -22,6 +47,55 @@ export default function PricingPage() {
     { q: t('price.faq2q'), a: t('price.faq2a') },
     { q: t('price.faq3q'), a: t('price.faq3a') },
   ]
+
+  if (isPro) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white">
+        <Navbar />
+        <main className="pt-24 pb-20 px-4 max-w-lg mx-auto">
+          <div className="text-center mb-10">
+            <div className="text-5xl mb-4">✦</div>
+            <h1 className="text-3xl font-extrabold gradient-text mb-2">Pro 會員</h1>
+            <p className="text-gray-500 text-sm">{isEn ? 'Your subscription is active' : '您的訂閱目前有效'}</p>
+          </div>
+
+          <div className="card p-6 mb-4 space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">{isEn ? 'Status' : '狀態'}</span>
+              <span className="text-green-400 font-medium">{isEn ? '● Active' : '● 訂閱中'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">{isEn ? 'Plan' : '方案'}</span>
+              <span className="text-white">Pro · $4 / {isEn ? 'month' : '月'}</span>
+            </div>
+          </div>
+
+          {done ? (
+            <div className="text-center py-6 text-green-400 font-medium">
+              {isEn ? '✓ Cancelled. Redirecting...' : '✓ 已取消，正在跳轉...'}
+            </div>
+          ) : showConfirm ? (
+            <div className="card p-5 border border-red-500/20">
+              <p className="text-sm text-gray-300 mb-1 font-medium">{isEn ? 'Cancel subscription?' : '確定要取消訂閱？'}</p>
+              <p className="text-xs text-gray-500 mb-4">{isEn ? 'No refunds will be issued. Your Pro access ends immediately.' : '取消後不予退款，Pro 功能將立即停用。'}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-gray-400 hover:bg-white/5">
+                  {isEn ? 'Keep Pro' : '保留訂閱'}
+                </button>
+                <button onClick={handleCancel} disabled={cancelling} className="flex-1 py-2.5 rounded-xl text-sm bg-red-500/80 text-white hover:bg-red-500 disabled:opacity-50">
+                  {cancelling ? (isEn ? 'Cancelling...' : '取消中...') : (isEn ? 'Confirm Cancel' : '確認取消')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowConfirm(true)} className="w-full py-3 rounded-2xl border border-white/8 text-gray-500 text-sm hover:text-red-400 hover:border-red-500/30 transition-colors">
+              {isEn ? 'Cancel subscription' : '取消訂閱'}
+            </button>
+          )}
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
