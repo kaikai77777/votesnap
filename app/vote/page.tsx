@@ -116,12 +116,20 @@ export default function VotePage() {
 
         {!loading && done && (
           <div className="text-center mt-16 animate-fade-in">
-            <div className="text-6xl mb-4">🎉</div>
+            <div className="text-6xl mb-4">✅</div>
             <h2 className="text-2xl font-bold mb-2">{t('vote.allDone')}</h2>
             <p className="text-gray-400 text-sm mb-8">{t('vote.allDoneSub')}</p>
             <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
               <Link href="/ask" className="btn-gradient py-3.5 rounded-2xl text-center text-base">{t('vote.askSomething')}</Link>
-              <Link href="/my-questions" className="py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-base hover:bg-white/5 transition-colors">{t('vote.myQ')}</Link>
+              <Link href="/trending" className="py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-base hover:bg-white/5 transition-colors">
+                {isEn ? '🔥 Check Hot Questions' : '🔥 看熱門排行榜'}
+              </Link>
+              <button
+                onClick={() => { setIndex(0); setLoading(true); window.location.reload() }}
+                className="py-3 text-gray-600 text-sm hover:text-gray-400 transition-colors"
+              >
+                {isEn ? '↻ Refresh for new questions' : '↻ 重新整理找新問題'}
+              </button>
             </div>
           </div>
         )}

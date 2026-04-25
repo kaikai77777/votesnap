@@ -69,9 +69,24 @@ function ResultContent() {
 
   useEffect(() => {
     if (!question || isExpired(question.expires_at)) return
-    const interval = setInterval(fetchData, 15000)
-    return () => clearInterval(interval)
-  }, [question, fetchData])
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`votes-${id}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'votes', filter: `question_id=eq.${id}` },
+        (payload) => {
+          const vote = (payload.new as { vote: string }).vote as 'A' | 'B'
+          setStats(prev => {
+            const a = prev.a + (vote === 'A' ? 1 : 0)
+            const b = prev.b + (vote === 'B' ? 1 : 0)
+            const total = a + b
+            return { total, a, b, pctA: Math.round((a / total) * 100), pctB: Math.round((b / total) * 100) }
+          })
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [question, id])
 
   useEffect(() => {
     if (!question) return
