@@ -232,15 +232,17 @@ function ResultContent() {
           </Link>
         </div>
 
-        <button
-          onClick={() => setShowShare(true)}
-          className="w-full mt-3 py-3 rounded-2xl border border-white/8 text-gray-300 text-sm hover:bg-white/5 transition-colors"
-        >
-          分享結果
-        </button>
+        {isOwner && (
+          <button
+            onClick={() => setShowShare(true)}
+            className="w-full mt-3 py-3 rounded-2xl border border-white/8 text-gray-300 text-sm hover:bg-white/5 transition-colors"
+          >
+            分享結果
+          </button>
+        )}
 
-        {/* QR Code */}
-        <div className="mt-3">
+        {/* QR Code — owner only */}
+        {isOwner && <div className="mt-3">
           <button
             onClick={() => setShowQr(v => !v)}
             className="w-full py-3 rounded-2xl border border-white/8 text-gray-500 text-sm hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
@@ -259,7 +261,7 @@ function ResultContent() {
               <p className="text-black/60 text-xs text-center break-all">{voteUrl}</p>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Extend time — Pro owner only */}
         {isPro && isOwner && active && (
