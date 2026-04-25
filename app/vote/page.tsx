@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getActiveQuestionsForVoting, castVote } from '@/lib/queries'
+import { getActiveQuestionsForVoting, castVote, getProfile } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
 import { VoteCard } from '@/components/VoteCard'
+import { OnboardingModal } from '@/components/OnboardingModal'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
@@ -35,12 +36,19 @@ export default function VotePage() {
   const [loading, setLoading] = useState(true)
   const [lastVote, setLastVote] = useState<'A' | 'B' | null>(null)
   const [showDemoEnd, setShowDemoEnd] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
       setUserId(user.id)
+
+      // Show onboarding for new users (no interests set)
+      const { data: profile } = await getProfile(user.id)
+      if (!profile?.interests || profile.interests.length === 0) {
+        setShowOnboarding(true)
+      }
 
       // Check if new user (0 votes ever)
       const { count } = await supabase
@@ -95,6 +103,9 @@ export default function VotePage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       <Navbar />
+      {showOnboarding && userId && (
+        <OnboardingModal userId={userId} onDone={() => setShowOnboarding(false)} />
+      )}
       <main className="pt-20 pb-12 px-4 max-w-lg mx-auto flex flex-col items-center">
         {loading && (
           <div className="flex flex-col items-center gap-3 mt-20 text-gray-500">
