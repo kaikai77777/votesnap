@@ -149,8 +149,12 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6 text-center text-gray-600 text-sm">
-        <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="flex items-center justify-center gap-2 mb-3">
           <LogoWordmark className="text-base" />
+        </div>
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <Link href="/rules" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '社群規範' : 'Rules'}</Link>
+          <Link href="/pricing" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '定價' : 'Pricing'}</Link>
         </div>
         <p>votesnap.online · {new Date().getFullYear()}</p>
       </footer>

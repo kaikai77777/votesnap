@@ -99,7 +99,7 @@ export async function getVotesByQuestion(questionId: string) {
 
 export async function deleteQuestion(id: string) {
   const supabase = createClient()
-  return supabase.from('questions').delete().eq('id', id)
+  return supabase.from('questions').update({ status: 'deleted' }).eq('id', id)
 }
 
 export async function getUserQuestions(userId: string) {
@@ -108,6 +108,7 @@ export async function getUserQuestions(userId: string) {
     .from('questions')
     .select('*')
     .eq('user_id', userId)
+    .neq('status', 'deleted')
     .order('created_at', { ascending: false })
 }
 

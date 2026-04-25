@@ -128,6 +128,13 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Rules link */}
+            <div className="text-center pt-2">
+              <Link href="/rules" className="text-gray-600 text-xs hover:text-gray-400 transition-colors underline underline-offset-2">
+                {isEn ? 'Community Rules' : '社群規範'}
+              </Link>
+            </div>
+
             {/* Save */}
             <button
               onClick={save}
