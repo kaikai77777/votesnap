@@ -44,21 +44,12 @@ export default function VotePage() {
       if (!user) return router.replace('/login')
       setUserId(user.id)
 
-      // Show onboarding for new users (no interests set)
+      // Show onboarding + demos only for truly new users (no interests set)
       const { data: profile } = await getProfile(user.id)
-      if (!profile?.interests || profile.interests.length === 0) {
-        setShowOnboarding(true)
-      }
+      const isNewUser = !profile?.interests || profile.interests.length === 0
+      if (isNewUser) setShowOnboarding(true)
 
-      // Check if new user (0 votes ever)
-      const { count } = await supabase
-        .from('votes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-
-      const isNewUser = (count ?? 0) === 0
       const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
-
       const { data, error } = await getActiveQuestionsForVoting(user.id)
       const real = (!error && data) ? data : []
 
