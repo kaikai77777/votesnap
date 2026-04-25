@@ -146,6 +146,7 @@ export default function VotePage() {
             <VoteCard
               question={current}
               onVote={handleVote}
+              onSkip={!isDemo ? () => setIndex(i => i + 1) : undefined}
               current={isDemo ? index + 1 : index - demoCount + 1}
               total={isDemo ? demoCount : realTotal}
             />

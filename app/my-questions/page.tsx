@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getUserQuestions, calcVoteStats, isExpired, getProfile } from '@/lib/queries'
+import { getUserQuestions, calcVoteStats, isExpired, getProfile, deleteQuestion } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import ShareModal from '@/components/ShareModal'
@@ -45,6 +45,8 @@ export default function MyQuestionsPage() {
   const [loading, setLoading] = useState(true)
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [shareQ, setShareQ] = useState<QuestionWithStats | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const today = todayTaipei()
   const [viewYear, setViewYear] = useState(() => parseInt(today.slice(0, 4)))
@@ -134,6 +136,14 @@ export default function MyQuestionsPage() {
   function nextMonth() {
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
     else setViewMonth(m => m + 1)
+  }
+
+  async function handleDelete(id: string) {
+    setDeleting(true)
+    await deleteQuestion(id)
+    setQuestions(prev => prev.filter(q => q.id !== id))
+    setConfirmDeleteId(null)
+    setDeleting(false)
   }
 
   const WEEKDAYS = isEn
@@ -275,10 +285,29 @@ export default function MyQuestionsPage() {
                                 </span>
                               )}
                             </div>
-                            <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
-                              {active ? t('myq.live') : t('myq.ended')}
-                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
+                                {active ? t('myq.live') : t('myq.ended')}
+                              </span>
+                              <button
+                                onClick={() => setConfirmDeleteId(confirmDeleteId === q.id ? null : q.id)}
+                                className="w-7 h-7 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-gray-600 hover:text-red-400 transition-colors"
+                              >
+                                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                </svg>
+                              </button>
+                            </div>
                           </div>
+                          {confirmDeleteId === q.id && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between gap-3">
+                              <p className="text-red-400 text-xs">{isEn ? 'Delete this question?' : '確定刪除此問題？'}</p>
+                              <div className="flex gap-2 shrink-0">
+                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1 rounded-lg text-xs text-gray-400 bg-white/5 hover:bg-white/10 transition-colors">{isEn ? 'Cancel' : '取消'}</button>
+                                <button onClick={() => handleDelete(q.id)} disabled={deleting} className="px-3 py-1 rounded-lg text-xs text-white bg-red-500/80 hover:bg-red-500 transition-colors disabled:opacity-50">{deleting ? '...' : isEn ? 'Delete' : '刪除'}</button>
+                              </div>
+                            </div>
+                          )}
                           <div className="space-y-1.5 mb-4">
                             {[{ label: q.option_a, pct: q.pctA, gradient: true }, { label: q.option_b, pct: q.pctB, gradient: false }].map(({ label, pct, gradient }) => (
                               <div key={label} className="flex items-center gap-2 text-xs">

@@ -12,11 +12,13 @@ export function Navbar() {
   const router = useRouter()
   const { t, lang, toggle } = useLang()
 
+  const isEn = t('nav.vote') === 'Vote'
   const NAV = [
-    { href: '/vote',         label: t('nav.vote'), icon: '🗳️' },
-    { href: '/ask',          label: t('nav.ask'),  icon: '✏️' },
-    { href: '/my-questions', label: t('nav.myQ'),  icon: '📋' },
-    { href: '/pricing',      label: 'Pro',         icon: '✦'  },
+    { href: '/vote',         label: t('nav.vote'),           icon: '🗳️' },
+    { href: '/ask',          label: t('nav.ask'),            icon: '✏️' },
+    { href: '/my-questions', label: t('nav.myQ'),            icon: '📋' },
+    { href: '/settings',     label: isEn ? 'Profile' : '設定', icon: '⚙️' },
+    { href: '/pricing',      label: 'Pro',                   icon: '✦'  },
   ]
 
   async function handleSignOut() {

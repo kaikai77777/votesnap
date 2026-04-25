@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { LogoWordmark } from '@/components/Logo'
 import { useLang } from '@/lib/i18n'
+import { createClient } from '@/lib/supabase/client'
 
 const EXAMPLE_CARDS = [
   { yes: 74, no: 26, votes: 312, zh: '要不要主動傳訊息給他？', en: 'Should I text first?', optA: 'Yes', optB: 'No' },
@@ -12,6 +14,19 @@ const EXAMPLE_CARDS = [
 
 export default function LandingPage() {
   const { t, lang } = useLang()
+  const [stats, setStats] = useState({ todayQs: 0, totalVotes: 0 })
+
+  useEffect(() => {
+    const supabase = createClient()
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    Promise.all([
+      supabase.from('questions').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+      supabase.from('votes').select('*', { count: 'exact', head: true }),
+    ]).then(([qs, vs]) => {
+      setStats({ todayQs: qs.count ?? 0, totalVotes: vs.count ?? 0 })
+    })
+  }, [])
 
   const HOW_IT_WORKS = [
     { step: '01', icon: '💬', title: t('land.s1t'), desc: t('land.s1d') },
@@ -79,6 +94,22 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-gray-600 text-xs mt-3">{card.votes} votes</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Live stats */}
+      <section className="py-10 px-6">
+        <div className="max-w-2xl mx-auto grid grid-cols-3 gap-4">
+          {[
+            { value: stats.todayQs.toLocaleString(), label: t('land.stat1') },
+            { value: stats.totalVotes.toLocaleString(), label: t('land.stat2') },
+            { value: '~15 min', label: t('land.stat3') },
+          ].map(({ value, label }) => (
+            <div key={label} className="card p-5 text-center">
+              <p className="text-2xl font-bold gradient-text mb-1">{value}</p>
+              <p className="text-xs text-gray-500">{label}</p>
             </div>
           ))}
         </div>

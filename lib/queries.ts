@@ -97,6 +97,11 @@ export async function getVotesByQuestion(questionId: string) {
   return supabase.from('votes').select('vote').eq('question_id', questionId)
 }
 
+export async function deleteQuestion(id: string) {
+  const supabase = createClient()
+  return supabase.from('questions').delete().eq('id', id)
+}
+
 export async function getUserQuestions(userId: string) {
   const supabase = createClient()
   return supabase
