@@ -13,6 +13,7 @@ export default function PricingPage() {
   const isEn = t('price.free') === 'Free'
 
   const [isPro, setIsPro] = useState(false)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [done, setDone] = useState(false)
@@ -21,8 +22,9 @@ export default function PricingPage() {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
-      const { data } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      const { data } = await supabase.from('profiles').select('is_pro, pro_expires_at').eq('id', user.id).single()
       setIsPro(data?.is_pro ?? false)
+      setExpiresAt(data?.pro_expires_at ?? null)
     })
   }, [])
 
@@ -68,6 +70,14 @@ export default function PricingPage() {
               <span className="text-gray-500">{isEn ? 'Plan' : '方案'}</span>
               <span className="text-white">Pro · $4 / {isEn ? 'month' : '月'}</span>
             </div>
+            {expiresAt && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">{isEn ? 'Renews / Expires' : '到期日'}</span>
+                <span className="text-white">
+                  {new Date(expiresAt).toLocaleDateString(isEn ? 'en-US' : 'zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+              </div>
+            )}
           </div>
 
           {done ? (
