@@ -92,7 +92,7 @@ export function OnboardingModal({ userId, onDone }: Props) {
               {isEn ? 'What do you like?' : '你喜歡哪些話題？'}
             </h2>
             <p className="text-gray-500 text-sm mb-5">
-              {isEn ? 'We'll show you questions you care about.' : '我們會優先顯示你感興趣的問題。'}
+              {isEn ? "We'll show you questions you care about." : '我們會優先顯示你感興趣的問題。'}
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
