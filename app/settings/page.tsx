@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('')
   const [interests, setInterests] = useState<string[]>([])
+  const [isPro, setIsPro] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -36,6 +37,7 @@ export default function SettingsPage() {
         setAge(profile.age_range ?? '')
         setGender(profile.gender ?? '')
         setInterests(profile.interests ?? [])
+        setIsPro(profile.is_pro ?? false)
       }
       setLoading(false)
     })
