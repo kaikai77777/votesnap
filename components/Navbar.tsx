@@ -64,9 +64,6 @@ export function Navbar() {
                 {label}
               </Link>
             ))}
-            <Link href="/pricing" className="px-3 py-1.5 rounded-full text-sm font-medium gradient-bg text-white">
-              Pro
-            </Link>
             <button
               onClick={handleSignOut}
               className="ml-1 px-3 py-1.5 rounded-full text-sm font-medium bg-white/8 text-gray-400 hover:bg-red-500/20 hover:text-red-400 border border-white/8 transition-colors"
