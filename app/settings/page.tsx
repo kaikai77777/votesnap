@@ -63,7 +63,10 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#0A0A0A]">
       <Navbar />
       <main className="pt-20 pb-20 px-4 max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold mb-6">{isEn ? 'Profile Settings' : '個人設定'}</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-2xl font-bold">{isEn ? 'Profile Settings' : '個人設定'}</h1>
+          {isPro && <span className="px-2 py-1 rounded-lg text-xs font-bold gradient-bg">{isEn ? '✦ PRO' : '✦ PRO'}</span>}
+        </div>
 
         {loading ? (
           <div className="flex justify-center mt-20">

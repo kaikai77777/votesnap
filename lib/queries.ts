@@ -17,6 +17,7 @@ export async function getActiveQuestionsForVoting(userId: string) {
     .eq('status', 'active')
     .neq('user_id', userId)
     .gt('expires_at', new Date().toISOString())
+    .order('is_priority', { ascending: false })
     .order('expires_at', { ascending: true })
     .limit(20)
 
@@ -34,6 +35,7 @@ export async function createQuestion(payload: {
   option_b: string
   category: string
   duration_minutes: number
+  is_priority?: boolean
 }) {
   const supabase = createClient()
   const expires_at = new Date(
@@ -120,6 +122,33 @@ export async function getProfile(userId: string) {
 export async function upsertProfile(profile: Partial<Profile> & { id: string }) {
   const supabase = createClient()
   return supabase.from('profiles').upsert(profile).select().single()
+}
+
+export async function getDemographicStats(questionId: string) {
+  const supabase = createClient()
+  const { data: votes } = await supabase
+    .from('votes').select('vote, user_id').eq('question_id', questionId)
+  if (!votes || votes.length === 0) return null
+
+  const userIds = [...new Set(votes.map(v => v.user_id))]
+  const { data: profiles } = await supabase
+    .from('profiles').select('id, age_range, gender').in('id', userIds)
+
+  type Bucket = { a: number; b: number }
+  const age: Record<string, Bucket> = {}
+  const gender: Record<string, Bucket> = {}
+
+  for (const v of votes) {
+    const p = profiles?.find(x => x.id === v.user_id)
+    const ag = p?.age_range ?? '未知'
+    const gd = p?.gender ?? '未知'
+    if (!age[ag]) age[ag] = { a: 0, b: 0 }
+    if (!gender[gd]) gender[gd] = { a: 0, b: 0 }
+    if (v.vote === 'A') { age[ag].a++; gender[gd].a++ }
+    else { age[ag].b++; gender[gd].b++ }
+  }
+
+  return { age, gender }
 }
 
 export function calcVoteStats(votes: { vote: string }[]) {

@@ -18,6 +18,7 @@ export default function AskPage() {
   const { t } = useLang()
   const isEn = t('ask.title') === 'Ask anything'
   const [userId, setUserId] = useState<string | null>(null)
+  const [isPro, setIsPro] = useState(false)
   const [text, setText] = useState('')
   const [optionA, setOptionA] = useState('Yes')
   const [optionB, setOptionB] = useState('No')
@@ -33,6 +34,8 @@ export default function AskPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return router.replace('/login')
       setUserId(user.id)
+      const { data: profile } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      setIsPro(profile?.is_pro ?? false)
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const { data } = await supabase
         .from('questions').select('id').eq('user_id', user.id)
@@ -45,7 +48,7 @@ export default function AskPage() {
     e.preventDefault()
     if (!userId) return
     if (!text.trim()) return setError(t('ask.errorEmpty'))
-    if (todayCount >= DAILY_LIMIT) return setError(t('ask.errorLimit'))
+    if (!isPro && todayCount >= DAILY_LIMIT) return setError(t('ask.errorLimit'))
 
     setSubmitting(true)
     setError('')
@@ -57,6 +60,7 @@ export default function AskPage() {
       option_b: optionB || 'No',
       category: category || '其他',
       duration_minutes: duration,
+      is_priority: isPro,
     })
 
     if (err || !data) {
@@ -72,7 +76,7 @@ export default function AskPage() {
     router.push(`/result/${data.id}?created=true`)
   }
 
-  const remaining = DAILY_LIMIT - todayCount
+  const remaining = isPro ? Infinity : DAILY_LIMIT - todayCount
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -80,12 +84,21 @@ export default function AskPage() {
       <main className="pt-20 pb-12 px-4 max-w-lg mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{t('ask.title')}</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {t('ask.remaining', { n: remaining })}
-            {remaining === 0 && (
-              <Link href="/pricing" className="text-orange-400 ml-2 hover:underline underline-offset-2">
-                — {t('ask.upgradePro')}
-              </Link>
+          <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+            {isPro ? (
+              <span className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full text-xs gradient-bg font-semibold">PRO</span>
+                {isEn ? 'Unlimited questions' : '無限發問'}
+              </span>
+            ) : (
+              <>
+                {t('ask.remaining', { n: remaining })}
+                {remaining === 0 && (
+                  <Link href="/pricing" className="text-orange-400 hover:underline underline-offset-2">
+                    — {t('ask.upgradePro')}
+                  </Link>
+                )}
+              </>
             )}
           </p>
         </div>
@@ -146,14 +159,20 @@ export default function AskPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">{t('ask.duration')}</label>
-              <div className="flex gap-2">
-                {[10, 15, 30].map((d) => (
+              <div className="flex gap-2 flex-wrap">
+                {(isPro ? [10, 15, 30, 60, 120] : [10, 15, 30]).map((d) => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex-1 min-w-[60px] py-3 rounded-xl text-sm font-medium transition-all ${
                       duration === d ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'
                     }`}>{t('ask.durationMin', { n: d })}</button>
                 ))}
               </div>
+              {!isPro && (
+                <p className="text-xs text-gray-600 mt-2">
+                  <Link href="/pricing" className="text-violet-400 hover:underline underline-offset-2">{isEn ? 'Pro' : 'Pro 版'}</Link>
+                  {isEn ? ' unlocks 60 & 120 min' : ' 解鎖 60 & 120 分鐘'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -161,7 +180,7 @@ export default function AskPage() {
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm">{error}</div>
           )}
 
-          <button type="submit" disabled={submitting || !text.trim() || remaining === 0}
+          <button type="submit" disabled={submitting || !text.trim() || (!isPro && remaining === 0)}
             className="w-full btn-gradient py-4 rounded-2xl text-base disabled:opacity-40">
             {submitting ? t('ask.submitting') : t('ask.submit')}
           </button>

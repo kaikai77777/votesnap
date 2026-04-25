@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogoWordmark } from './Logo'
@@ -11,6 +12,16 @@ export function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t, lang, toggle } = useLang()
+  const [isPro, setIsPro] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      setIsPro(data?.is_pro ?? false)
+    })
+  }, [])
 
   const isEn = t('nav.vote') === 'Vote'
   const NAV = [
@@ -33,8 +44,9 @@ export function Navbar() {
       {/* ── Top bar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/vote">
+          <Link href="/vote" className="flex items-center gap-2">
             <LogoWordmark className="text-lg" />
+            {isPro && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold gradient-bg leading-none">PRO</span>}
           </Link>
 
           {/* Desktop nav */}

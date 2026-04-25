@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile } from '@/lib/queries'
+import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile, getDemographicStats } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
@@ -35,6 +35,8 @@ function ResultContent() {
   const [error, setError] = useState('')
   const [showShare, setShowShare] = useState(false)
   const [displayName, setDisplayName] = useState<string | null>(null)
+  const [isPro, setIsPro] = useState(false)
+  const [demographics, setDemographics] = useState<Awaited<ReturnType<typeof getDemographicStats>>>(null)
 
   const isCreated = searchParams.get('created') === 'true'
 
@@ -54,6 +56,10 @@ function ResultContent() {
       fetchData()
       const { data: profile } = await getProfile(user.id)
       if (profile?.display_name) setDisplayName(profile.display_name)
+      if (profile?.is_pro) {
+        setIsPro(true)
+        getDemographicStats(id).then(setDemographics)
+      }
     })
   }, [router, fetchData])
 
@@ -131,6 +137,70 @@ function ResultContent() {
         <div className="bg-white/4 border border-white/6 rounded-2xl p-4 mb-6">
           <p className="text-gray-300 text-sm font-medium leading-relaxed">{emotionalCopy}</p>
         </div>
+
+        {/* Demographic breakdown */}
+        {isPro ? (
+          demographics && (
+            <div className="card p-5 mb-4">
+              <p className="text-xs text-gray-500 font-medium mb-4 flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded gradient-bg text-[10px] font-bold">PRO</span>
+                {isEn ? 'Who voted what' : '投票人口分析'}
+              </p>
+              {[
+                { label: isEn ? 'By age' : '年齡層', data: demographics.age },
+                { label: isEn ? 'By gender' : '性別', data: demographics.gender },
+              ].map(({ label, data }) => {
+                const entries = Object.entries(data).filter(([, v]) => v.a + v.b > 0)
+                if (entries.length === 0) return null
+                return (
+                  <div key={label} className="mb-4 last:mb-0">
+                    <p className="text-xs text-gray-600 mb-2">{label}</p>
+                    <div className="space-y-2">
+                      {entries.sort(([a],[b]) => a.localeCompare(b)).map(([group, { a, b }]) => {
+                        const total = a + b
+                        const pctA = Math.round((a / total) * 100)
+                        return (
+                          <div key={group}>
+                            <div className="flex justify-between text-xs text-gray-400 mb-1">
+                              <span>{group}</span>
+                              <span>{question!.option_a} {pctA}% · {question!.option_b} {100 - pctA}%</span>
+                            </div>
+                            <div className="h-2 bg-white/5 rounded-full overflow-hidden flex">
+                              <div className="h-full gradient-bg rounded-l-full" style={{ width: `${pctA}%` }} />
+                              <div className="h-full bg-white/15 rounded-r-full" style={{ width: `${100 - pctA}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : (
+          <div className="relative mb-4 overflow-hidden rounded-2xl">
+            <div className="card p-5 select-none pointer-events-none" style={{ filter: 'blur(5px)', opacity: 0.5 }}>
+              <p className="text-xs text-gray-500 mb-3">{isEn ? 'Who voted what' : '投票人口分析'}</p>
+              {['18-24', '25-30', '31-40'].map(g => (
+                <div key={g} className="mb-2">
+                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{g}</span><span>68% · 32%</span></div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden flex">
+                    <div className="h-full gradient-bg rounded-l-full" style={{ width: '68%' }} />
+                    <div className="h-full bg-white/15 rounded-r-full" style={{ width: '32%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="bg-[#0F0F0F]/90 border border-white/10 rounded-2xl px-5 py-4 text-center shadow-xl">
+                <p className="text-sm font-semibold text-white mb-0.5">{isEn ? 'Pro Feature' : 'Pro 專屬'}</p>
+                <p className="text-xs text-gray-400 mb-3">{isEn ? 'See who voted for what' : '查看各族群怎麼投票'}</p>
+                <Link href="/pricing" className="btn-gradient px-5 py-2 rounded-xl text-xs font-medium">{isEn ? 'Upgrade →' : '升級 Pro →'}</Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <Link href="/vote" className="flex-1 py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-sm hover:bg-white/5 transition-colors">
