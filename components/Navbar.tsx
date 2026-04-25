@@ -43,7 +43,7 @@ export function Navbar() {
     <>
       {/* ── Top bar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/vote" className="flex items-center gap-2">
             <LogoWordmark className="text-lg" />
             {isPro && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold gradient-bg leading-none">PRO</span>}
