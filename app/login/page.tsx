@@ -37,7 +37,6 @@ function LoginContent() {
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4"><Logo size={56} /></div>
         <LogoWordmark className="text-3xl" />
-        <p className="text-gray-500 text-sm mt-2">{t('app.tagline')}</p>
       </div>
 
       <div className="card p-8">
