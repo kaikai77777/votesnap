@@ -125,25 +125,48 @@ export default function LegalPage() {
         {tab === 'about' && (
           <div className="space-y-4">
             <div className="card p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl font-black gradient-text">votesnap</span>
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed mb-2">
+              <h2 className="text-sm font-semibold text-white mb-3">{isEn ? 'What We Do' : '我們在做什麼'}</h2>
+              {isEn ? (
+                <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
+                  <p>VoteSnap is an anonymous voting platform designed for people with decision fatigue.</p>
+                  <p>The average person makes 35,000 decisions every day. Most are small — but these add up, quietly draining your energy. We believe some decisions shouldn't be carried alone. Throw your question on VoteSnap, and in minutes, the world helps you choose.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
+                  <p>VoteSnap 是一個專為「選擇障礙」設計的匿名投票平台。</p>
+                  <p>每個人每天平均要做 35,000 個決定。大多數很小，但這些小決定累積起來，會悄悄消耗掉一整天的精力。我們相信，有些決定不該一個人扛。把問題丟到 VoteSnap，幾分鐘內，世界會幫你選。</p>
+                </div>
+              )}
+            </div>
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold text-white mb-3">{isEn ? 'What We Believe' : '我們相信'}</h2>
+              <p className="text-sm text-gray-400 leading-relaxed mb-3">
                 {isEn
-                  ? "VoteSnap is built for the moments when you just can't decide. Post a question, share the link, and let real people vote — anonymously, in real time."
-                  : 'VoteSnap 是為那些拿不定主意的時刻而生。發一個問題、分享連結，讓真實的人即時匿名投票。'}
+                  ? "Decision fatigue is one of the most underrated problems of our time. VoteSnap won't make decisions for you — but it distills \"the world's gut feeling\" into a single percentage, helping you see which way you actually lean."
+                  : '決策疲勞是這個時代被低估的問題。VoteSnap 不會幫你做決定——但會把「全世界的直覺」濃縮成一個百分比，讓你看清楚自己其實傾向哪一邊。'}
               </p>
-              <p className="text-sm text-gray-500">
-                {isEn ? 'Launched 2025 · ' : '2025 年上線 · '}
-                <a href="mailto:votesnap.online@gmail.com" className="text-violet-400 hover:underline">votesnap.online@gmail.com</a>
+              <p className="text-sm text-gray-300 italic border-l-2 border-violet-500/40 pl-4">
+                {isEn
+                  ? "Often, when you see that the result isn't what you expected — that's when you realize you'd already decided."
+                  : '很多時候，當你看到投票結果不是你期待的那個答案——你才發現自己其實早就決定了。'}
               </p>
             </div>
-            {faqs.map(({ q, a }) => (
-              <div key={q} className="card p-5">
-                <p className="text-white text-sm font-medium mb-1.5">{q}</p>
-                <p className="text-gray-400 text-sm leading-relaxed">{a}</p>
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold text-white mb-3">{isEn ? 'FAQ' : '常見問題'}</h2>
+              <div className="space-y-4">
+                {faqs.map(({ q, a }) => (
+                  <div key={q}>
+                    <p className="text-white text-sm font-medium mb-1">{q}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed">{a}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold text-white mb-2">{isEn ? 'Contact' : '聯絡我們'}</h2>
+              <p className="text-sm text-gray-400 mb-1">{isEn ? 'Questions, partnerships, or reports:' : '有任何問題、合作或檢舉：'}</p>
+              <a href="mailto:votesnap.online@gmail.com" className="text-violet-400 hover:underline text-sm">votesnap.online@gmail.com</a>
+            </div>
           </div>
         )}
 

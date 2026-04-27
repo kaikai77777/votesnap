@@ -8,127 +8,109 @@ export default function AboutPage() {
   const { t } = useLang()
   const isEn = t('nav.vote') === 'Vote'
 
-  const faqs = isEn ? [
-    {
-      q: 'What is VoteSnap?',
-      a: 'VoteSnap is a social poll platform for quick decisions. Post a yes/no or A/B question, share the link, and get real-time votes from your friends or the community — all anonymous.',
-    },
-    {
-      q: 'Is voting anonymous?',
-      a: 'Yes, completely. Question owners can only see vote percentages and total counts. No one can see who voted for which option.',
-    },
-    {
-      q: 'Do I need an account to vote?',
-      a: 'No. You can vote anonymously without signing up. An account is only required to post questions.',
-    },
-    {
-      q: 'How long does a poll last?',
-      a: 'Free users can set polls from 30 minutes up to 24 hours. Pro users can choose any duration from 5 minutes to 7 days.',
-    },
-    {
-      q: 'What is VoteSnap Pro?',
-      a: 'Pro is a one-time $4 lifetime upgrade that unlocks: unlimited daily questions, custom poll durations (5 min – 7 days), demographic breakdowns (age & gender), and priority feed exposure.',
-    },
-    {
-      q: 'Can I get a refund?',
-      a: 'Yes. We offer a 14-day no-questions-asked refund from the date of purchase. Email votesnap.online@gmail.com with your order ID.',
-    },
-    {
-      q: 'How do I report inappropriate content?',
-      a: 'Tap the flag icon on any poll card to report it. Our team reviews all reports and removes content that violates our Community Rules.',
-    },
-    {
-      q: 'How do I contact you?',
-      a: 'Email us at votesnap.online@gmail.com. We typically respond within 1–2 business days.',
-    },
-  ] : [
-    {
-      q: 'VoteSnap 是什麼？',
-      a: 'VoteSnap 是一個快速決策的社群投票平台。發布一個是非題或 A/B 選擇題，分享連結，即可獲得朋友或社群的即時匿名投票。',
-    },
-    {
-      q: '投票是匿名的嗎？',
-      a: '是的，完全匿名。問題發布者只能看到投票百分比和總票數，任何人都無法得知誰投了哪個選項。',
-    },
-    {
-      q: '投票需要帳號嗎？',
-      a: '不需要。您可以在不註冊的情況下匿名投票。只有發布問題才需要帳號。',
-    },
-    {
-      q: '投票持續多長時間？',
-      a: '免費用戶可設定 30 分鐘到 24 小時。Pro 用戶可選擇從 5 分鐘到 7 天的任意時長。',
-    },
-    {
-      q: 'VoteSnap Pro 是什麼？',
-      a: 'Pro 是一次性 $4 永久升級，解鎖：無限每日發問、自訂投票時效（5 分鐘 ～ 7 天）、人口統計分析（年齡與性別）、以及優先曝光排序。',
-    },
-    {
-      q: '可以退款嗎？',
-      a: '可以。我們提供購買日起 14 天無條件退款。請寄信至 votesnap.online@gmail.com 並附上訂單編號。',
-    },
-    {
-      q: '如何檢舉不當內容？',
-      a: '點擊任何投票卡片上的旗幟圖示即可檢舉。我們的團隊會審核所有檢舉，並下架違反社群規範的內容。',
-    },
-    {
-      q: '如何聯絡你們？',
-      a: '請寄信至 votesnap.online@gmail.com，我們通常在 1–2 個工作日內回覆。',
-    },
-  ]
-
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       <Navbar />
       <main className="pt-20 pb-16 px-4 max-w-lg mx-auto">
 
-        {/* About */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl font-black gradient-text">votesnap</span>
+        {/* Title */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white mb-1">
+            {isEn ? 'About VoteSnap' : 'About VoteSnap｜關於我們'}
+          </h1>
+        </div>
+
+        {/* What we do */}
+        <div className="card p-6 mb-4">
+          <h2 className="text-sm font-semibold text-white mb-3">
+            {isEn ? 'What We Do' : '我們在做什麼'}
+          </h2>
+          {isEn ? (
+            <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+              <p>VoteSnap is an anonymous voting platform designed for people with decision fatigue.</p>
+              <p>The average person makes 35,000 decisions every day. Most are small — what to eat for lunch, whether to reply to that message, does this outfit look good — but these small decisions add up, quietly draining your energy throughout the day.</p>
+              <p>We believe some decisions shouldn't be carried alone. Throw your question on VoteSnap, and in minutes, the world helps you choose.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+              <p>VoteSnap 是一個專為「選擇障礙」設計的匿名投票平台。</p>
+              <p>每個人每天平均要做 35,000 個決定。大多數很小——午餐吃什麼、要不要回訊息、這件衣服好不好看——但這些小決定累積起來，會悄悄消耗掉一整天的精力。</p>
+              <p>我們相信，有些決定不該一個人扛。把問題丟到 VoteSnap，幾分鐘內，世界會幫你選。</p>
+            </div>
+          )}
+        </div>
+
+        {/* Why VoteSnap */}
+        <div className="card p-6 mb-4">
+          <h2 className="text-sm font-semibold text-white mb-4">
+            {isEn ? 'Why VoteSnap' : '為什麼是 VoteSnap'}
+          </h2>
+          <div className="space-y-3">
+            {(isEn ? [
+              { icon: '🔒', title: 'Completely anonymous', desc: 'No one knows who voted for what, so no one needs to pretend.' },
+              { icon: '⚡', title: 'Fast results', desc: 'See trends in 15 minutes, get answers within an hour.' },
+              { icon: '🔗', title: 'Zero-friction voting', desc: 'Friends click your link — no signup, no download, one tap to vote.' },
+              { icon: '✦', title: 'Always free', desc: 'Core features are free. Post 5 questions per day at no cost.' },
+            ] : [
+              { icon: '🔒', title: '完全匿名', desc: '沒有人知道誰投了什麼，所以沒有人需要假裝。' },
+              { icon: '⚡', title: '快速結果', desc: '15 分鐘就能看到趨勢，最快 1 小時得到答案。' },
+              { icon: '🔗', title: '零摩擦投票', desc: '朋友收到連結，不用註冊、不用下載，點一下就投。' },
+              { icon: '✦', title: '永遠免費', desc: '核心功能不收錢，每天可發 5 題。' },
+            ]).map(({ icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <span className="text-lg shrink-0 mt-0.5">{icon}</span>
+                <div>
+                  <p className="text-white text-sm font-medium">{title}</p>
+                  <p className="text-gray-500 text-sm">{desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="text-gray-400 text-sm leading-relaxed mb-4">
-            {isEn
-              ? 'VoteSnap is built for the moments when you just can\'t decide. Post a question, share the link, and let real people vote — anonymously, in real time.'
-              : 'VoteSnap 是為那些拿不定主意的時刻而生。發一個問題、分享連結，讓真實的人即時匿名投票。'}
-          </p>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            {isEn
-              ? 'Launched in 2025. Built with Next.js, Supabase, and a lot of indecision.'
-              : '2025 年上線。用 Next.js、Supabase，以及大量選擇困難打造而成。'}
-          </p>
+        </div>
+
+        {/* What we believe */}
+        <div className="card p-6 mb-4">
+          <h2 className="text-sm font-semibold text-white mb-3">
+            {isEn ? 'What We Believe' : '我們相信'}
+          </h2>
+          {isEn ? (
+            <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+              <p>Decision fatigue is one of the most underrated problems of our time. Too much information, too many options, too high a cost of regret. VoteSnap won't make decisions for you — but it will distill "the world's gut feeling" into a single percentage, helping you see which way you actually lean.</p>
+              <p className="text-gray-300 italic border-l-2 border-violet-500/40 pl-4">
+                Often, when you see that the result isn't what you expected — that's when you realize you'd already decided.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+              <p>決策疲勞是這個時代被低估的問題。資訊太多、選項太多、後悔的成本太高。VoteSnap 不會幫你做決定——但會把「全世界的直覺」濃縮成一個百分比，讓你看清楚自己其實傾向哪一邊。</p>
+              <p className="text-gray-300 italic border-l-2 border-violet-500/40 pl-4">
+                很多時候，當你看到投票結果不是你期待的那個答案——你才發現自己其實早就決定了。
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Contact */}
-        <div className="card p-5 mb-8">
-          <h2 className="text-sm font-semibold text-white mb-3">{isEn ? 'Contact' : '聯絡我們'}</h2>
-          <div className="space-y-2 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">✉</span>
-              <a href="mailto:votesnap.online@gmail.com" className="text-violet-400 hover:underline">
-                votesnap.online@gmail.com
-              </a>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">🌐</span>
-              <span>votesnap.online</span>
-            </div>
-          </div>
+        <div className="card p-6 mb-6">
+          <h2 className="text-sm font-semibold text-white mb-3">
+            {isEn ? 'Contact Us' : '聯絡我們'}
+          </h2>
+          <p className="text-sm text-gray-400 mb-2">
+            {isEn
+              ? 'For questions, partnerships, or reports:'
+              : '有任何問題、合作或檢舉：'}
+          </p>
+          <a href="mailto:votesnap.online@gmail.com" className="text-violet-400 hover:underline text-sm">
+            votesnap.online@gmail.com
+          </a>
         </div>
 
-        {/* FAQ */}
-        <h2 className="text-lg font-bold text-white mb-4">
-          {isEn ? 'Frequently Asked Questions' : '常見問題'}
-        </h2>
-        <div className="space-y-3">
-          {faqs.map(({ q, a }) => (
-            <div key={q} className="card p-5">
-              <p className="text-white text-sm font-medium mb-2">{q}</p>
-              <p className="text-gray-400 text-sm leading-relaxed">{a}</p>
-            </div>
-          ))}
-        </div>
+        {/* Footer line */}
+        <p className="text-center text-xs text-gray-700">
+          VoteSnap © {new Date().getFullYear()} · Made with ⚡ in Taiwan
+        </p>
 
-        <div className="mt-8 flex justify-center gap-4 text-xs text-gray-600">
+        <div className="mt-6 flex justify-center gap-4 text-xs text-gray-600">
           <Link href="/terms" className="hover:text-gray-400">{isEn ? 'Terms' : '服務條款'}</Link>
           <Link href="/privacy" className="hover:text-gray-400">{isEn ? 'Privacy' : '隱私政策'}</Link>
           <Link href="/refund" className="hover:text-gray-400">{isEn ? 'Refund' : '退款政策'}</Link>
