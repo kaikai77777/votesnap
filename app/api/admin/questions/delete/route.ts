@@ -39,9 +39,15 @@ export async function POST(req: NextRequest) {
 
   const reasonLabel = REASON_LABELS[reason] ?? reason ?? '違反使用規範'
 
-  // Delete reports and soft-delete question, store reason
+  // Delete reports first
   await admin.from('reports').delete().eq('question_id', id)
-  await admin.from('questions').update({ status: 'deleted', deleted_reason: reasonLabel }).eq('id', id)
+
+  // Soft-delete: status update is always safe
+  const { error: delErr } = await admin.from('questions').update({ status: 'deleted' }).eq('id', id)
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
+
+  // Store reason separately — fails silently if column doesn't exist yet
+  await admin.from('questions').update({ deleted_reason: reasonLabel } as Record<string, string>).eq('id', id)
 
   // Notify creator via push if they have a subscription
   if (question?.user_id) {
