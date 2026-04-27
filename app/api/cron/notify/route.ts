@@ -28,6 +28,32 @@ export async function GET(req: NextRequest) {
     .lte('expires_at', now.toISOString())
     .gte('expires_at', tenMinAgo)
 
+  // Questions expiring in ~1 hour (50–70 min from now) — push "almost done" warning
+  const in50min = new Date(now.getTime() + 50 * 60 * 1000).toISOString()
+  const in70min = new Date(now.getTime() + 70 * 60 * 1000).toISOString()
+  const { data: expiringSoon } = await supabase
+    .from('questions')
+    .select('id, user_id, question_text')
+    .eq('status', 'active')
+    .gte('expires_at', in50min)
+    .lte('expires_at', in70min)
+
+  for (const q of expiringSoon ?? []) {
+    const { data: profile } = await supabase
+      .from('profiles').select('push_subscription, notify_expiry').eq('id', q.user_id).single()
+    if (!profile?.push_subscription || !profile.notify_expiry) continue
+    try {
+      await webpush.sendNotification(
+        profile.push_subscription as webpush.PushSubscription,
+        JSON.stringify({
+          title: '⏰ 題目快結束了！',
+          body: `「${q.question_text}」剩不到 1 小時`,
+          url: `${process.env.NEXT_PUBLIC_SITE_URL}/result/${q.id}`,
+        })
+      )
+    } catch { /* expired subscription */ }
+  }
+
   if (!expired || expired.length === 0) return NextResponse.json({ sent: 0 })
 
   let sent = 0

@@ -7,6 +7,7 @@ import { getActiveQuestionsForVoting, castVote, getProfile } from '@/lib/queries
 import { Navbar } from '@/components/Navbar'
 import { VoteCard } from '@/components/VoteCard'
 import { OnboardingModal } from '@/components/OnboardingModal'
+import { subscribeToPush } from '@/components/PushInit'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
@@ -43,6 +44,7 @@ export default function VotePage() {
   const [lastVote, setLastVote] = useState<string | null>(null)
   const [showDemoEnd, setShowDemoEnd] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showPushPrompt, setShowPushPrompt] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
@@ -70,6 +72,11 @@ export default function VotePage() {
     })
   }, [isEn])
 
+  async function handlePushAccept() {
+    setShowPushPrompt(false)
+    await subscribeToPush()
+  }
+
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
@@ -93,6 +100,12 @@ export default function VotePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId: q.id }),
       }).catch(() => {})
+
+      // First-vote push prompt (show once, only if permission not yet granted)
+      if (!localStorage.getItem('push_prompted') && 'Notification' in window && Notification.permission === 'default') {
+        localStorage.setItem('push_prompted', '1')
+        setTimeout(() => setShowPushPrompt(true), 800)
+      }
     }
 
     setLastVote(vote)
@@ -125,6 +138,26 @@ export default function VotePage() {
       <Navbar />
       {showOnboarding && userId && (
         <OnboardingModal userId={userId} onDone={() => setShowOnboarding(false)} />
+      )}
+
+      {showPushPrompt && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-[#1C1C1E] rounded-3xl p-6 space-y-4">
+            <div className="text-3xl text-center">🔔</div>
+            <div className="text-center">
+              <h3 className="font-bold text-white text-lg">{isEn ? 'Stay in the loop' : '開啟投票通知'}</h3>
+              <p className="text-gray-400 text-sm mt-1">
+                {isEn ? 'Get notified when your questions hit milestones or end.' : '題目到達 5/10/50 票或結束時通知你'}
+              </p>
+            </div>
+            <button onClick={handlePushAccept} className="w-full btn-gradient py-3.5 rounded-2xl text-sm font-semibold">
+              {isEn ? 'Enable notifications' : '開啟通知'}
+            </button>
+            <button onClick={() => setShowPushPrompt(false)} className="w-full py-2 text-gray-600 text-sm hover:text-gray-400 transition-colors">
+              {isEn ? 'Not now' : '之後再說'}
+            </button>
+          </div>
+        </div>
       )}
 
       {toast && (

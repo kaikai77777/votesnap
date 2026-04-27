@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -57,6 +57,8 @@ export default function AskPage() {
   const [aiSuggestions, setAiSuggestions] = useState<Array<{ question: string; optionA: string; optionB: string }>>([])
   const [aiLoading, setAiLoading] = useState(false)
   const [showAi, setShowAi] = useState(false)
+  const [autoCategorizingMsg, setAutoCategorizingMsg] = useState(false)
+  const autoCatTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -72,6 +74,27 @@ export default function AskPage() {
       setTodayCount(data?.length ?? 0)
     })
   }, [router])
+
+  // Auto-categorize with debounce when user types question
+  useEffect(() => {
+    if (autoCatTimer.current) clearTimeout(autoCatTimer.current)
+    if (text.length < 8) return
+    setAutoCategorizingMsg(true)
+    autoCatTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/ai-categorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text }),
+        })
+        const { category: suggested } = await res.json()
+        if (suggested) setCategory(suggested)
+      } finally {
+        setAutoCategorizingMsg(false)
+      }
+    }, 1500)
+    return () => { if (autoCatTimer.current) clearTimeout(autoCatTimer.current) }
+  }, [text])
 
   const TEMPLATES = isEn ? TEMPLATES_EN : TEMPLATES_ZH
 
@@ -287,7 +310,10 @@ export default function AskPage() {
 
           <div className="card p-5 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">{t('ask.category')}</label>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-sm font-medium text-gray-400">{t('ask.category')}</label>
+                {autoCategorizingMsg && <span className="text-xs text-violet-400 animate-pulse">✦ AI 自動分類中...</span>}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((c) => (
                   <button key={c} type="button" onClick={() => setCategory(c)}

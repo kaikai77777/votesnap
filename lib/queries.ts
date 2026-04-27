@@ -27,15 +27,28 @@ export async function getActiveQuestionsForVoting(userId?: string | null, anonym
 
   const { data: activeQs, error } = await query
 
-  // Phase 0.4: 不足 10 題時補熱門已結束題目
+  // Phase 0.4: 不足 10 題時補熱門已結束題目（優先 ≥50 票，不足再降門檻）
   if (!error && activeQs && activeQs.length < 10) {
+    const need = 10 - activeQs.length
     const excludeIds = [...votedIds, ...activeQs.map(q => q.id)]
     let endedQuery = supabase
       .from('questions').select('*').eq('status', 'ended')
-      .order('created_at', { ascending: false }).limit(10 - activeQs.length)
+      .order('created_at', { ascending: false }).limit(50)
     if (excludeIds.length > 0) endedQuery = endedQuery.not('id', 'in', `(${excludeIds.join(',')})`)
     const { data: endedQs } = await endedQuery
-    return { data: [...(activeQs ?? []), ...(endedQs ?? [])], error: null }
+
+    if (endedQs && endedQs.length > 0) {
+      const { data: voteCounts } = await supabase
+        .from('votes').select('question_id').in('question_id', endedQs.map(q => q.id))
+      const countMap: Record<string, number> = {}
+      for (const v of voteCounts ?? []) countMap[v.question_id] = (countMap[v.question_id] ?? 0) + 1
+
+      const hot = endedQs.filter(q => (countMap[q.id] ?? 0) >= 50).slice(0, need)
+      const fill = hot.length < need
+        ? endedQs.filter(q => !hot.find(h => h.id === q.id)).slice(0, need - hot.length)
+        : []
+      return { data: [...activeQs, ...hot, ...fill], error: null }
+    }
   }
 
   return { data: activeQs ?? [], error }
