@@ -54,6 +54,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [deleteModal, setDeleteModal] = useState<{ id: string; text: string } | null>(null)
+  const [deleteReason, setDeleteReason] = useState('inappropriate')
 
   useEffect(() => {
     const supabase = createClient()
@@ -109,16 +111,24 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 2500)
   }
 
-  async function deleteQuestion(id: string) {
+  function openDeleteModal(id: string, text: string) {
+    setDeleteReason('inappropriate')
+    setDeleteModal({ id, text })
+  }
+
+  async function confirmDelete() {
+    if (!deleteModal) return
+    const { id } = deleteModal
+    setDeleteModal(null)
     setActionId(id + ':delete')
-    const res = await fetch('/api/admin/questions', {
-      method: 'DELETE',
+    const res = await fetch('/api/admin/questions/delete', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, reason: deleteReason }),
     })
     setActionId(null)
     if (res.ok) {
-      showToast('已刪除題目')
+      showToast('已刪除題目，若發問者有開啟推播將收到通知')
       loadReports()
       loadQuestions()
       setStats(s => s ? { ...s, totalQuestions: s.totalQuestions - 1, totalReports: Math.max(0, s.totalReports - 1) } : s)
@@ -161,6 +171,43 @@ export default function AdminPage() {
             : 'bg-green-500/20 border-green-500/30 text-green-400'
         }`}>
           {toast.msg}
+        </div>
+      )}
+
+      {/* Delete reason modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-white font-bold mb-1">確認刪除</h3>
+            <p className="text-gray-400 text-sm mb-4 leading-snug">「{deleteModal.text.slice(0, 40)}{deleteModal.text.length > 40 ? '…' : ''}」</p>
+            <p className="text-xs text-gray-500 mb-2">選擇刪除原因（將透過推播通知發問者）</p>
+            <div className="space-y-2 mb-5">
+              {[
+                { value: 'spam', label: '垃圾訊息' },
+                { value: 'inappropriate', label: '不當內容' },
+                { value: 'hate', label: '仇恨言論' },
+                { value: 'harassment', label: '騷擾霸凌' },
+                { value: 'misinformation', label: '散佈錯誤資訊' },
+                { value: 'other', label: '其他違規' },
+              ].map(({ value, label }) => (
+                <label key={value} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer border transition-all ${deleteReason === value ? 'border-red-500/40 bg-red-500/10' : 'border-white/6 hover:bg-white/5'}`}>
+                  <input type="radio" name="deleteReason" value={value} checked={deleteReason === value}
+                    onChange={() => setDeleteReason(value)} className="accent-red-500" />
+                  <span className="text-sm text-white">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteModal(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-gray-400 hover:bg-white/5 transition-colors">
+                取消
+              </button>
+              <button onClick={confirmDelete}
+                className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 text-white hover:bg-red-600 transition-colors font-medium">
+                確認刪除
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -300,7 +347,7 @@ export default function AdminPage() {
                           {actionId === q.id + ':dismiss' ? '...' : '忽略'}
                         </button>
                         <button
-                          onClick={() => deleteQuestion(q.id)}
+                          onClick={() => openDeleteModal(q.id, q.question_text)}
                           disabled={actionId === q.id + ':delete'}
                           className="px-3 py-1.5 rounded-lg text-xs bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-40">
                           {actionId === q.id + ':delete' ? '...' : '刪除'}
@@ -367,7 +414,7 @@ export default function AdminPage() {
                         查看
                       </Link>
                       <button
-                        onClick={() => deleteQuestion(q.id)}
+                        onClick={() => openDeleteModal(q.id, q.question_text)}
                         disabled={actionId === q.id + ':delete'}
                         className="px-3 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors disabled:opacity-50">
                         {actionId === q.id + ':delete' ? '...' : '刪除'}
