@@ -28,6 +28,7 @@ interface ReportedQuestion {
   category: string
   reportCount: number
   reasons: string[]
+  latestReport: string
 }
 
 interface Question {
@@ -218,7 +219,14 @@ export default function AdminPage() {
                           <span className="text-gray-600">{new Date(q.created_at).toLocaleDateString('zh-TW')}</span>
                         </div>
                         {q.reasons.length > 0 && (
-                          <p className="text-xs text-orange-400 mt-2">理由：{Array.from(new Set(q.reasons)).join('、')}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {q.reasons.map(r => (
+                              <span key={r} className="px-2 py-0.5 rounded-full text-xs bg-orange-500/15 text-orange-400 border border-orange-500/20">{r}</span>
+                            ))}
+                          </div>
+                        )}
+                        {q.latestReport && (
+                          <p className="text-xs text-gray-700 mt-1">最近檢舉：{new Date(q.latestReport).toLocaleString('zh-TW')}</p>
                         )}
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">

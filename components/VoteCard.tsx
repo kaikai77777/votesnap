@@ -24,6 +24,8 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   const [lightbox, setLightbox] = useState(false)
   const [reported, setReported] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
 
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -53,14 +55,17 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   }, [lightbox])
 
   async function handleReport() {
-    if (reported) return
+    if (reported || !reportReason || reportSubmitting) return
+    setReportSubmitting(true)
     await fetch('/api/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question_id: question.id, reason: 'user_report' }),
+      body: JSON.stringify({ question_id: question.id, reason: reportReason }),
     })
     setReported(true)
     setShowReport(false)
+    setReportReason('')
+    setReportSubmitting(false)
   }
 
   async function handleVote(v: string) {
@@ -178,15 +183,36 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
                   </svg>
                 </button>
                 {showReport && !reported && (
-                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl p-3 shadow-xl w-44">
-                    <p className="text-xs text-gray-400 mb-2">{isEn ? 'Report this question?' : '檢舉此問題？'}</p>
+                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-2xl p-4 shadow-xl w-56">
+                    <p className="text-xs font-medium text-white mb-3">{isEn ? 'Why are you reporting?' : '檢舉原因'}</p>
+                    <div className="space-y-1.5 mb-3">
+                      {(isEn
+                        ? ['Spam', 'Inappropriate content', 'Hate speech', 'Harassment', 'Other']
+                        : ['垃圾訊息', '不當內容', '仇恨言論', '騷擾霸凌', '其他']
+                      ).map(r => (
+                        <button key={r} onClick={() => setReportReason(r)}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors ${reportReason === r ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                          {r}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setShowReport(false)} className="flex-1 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 hover:bg-white/10">{isEn ? 'Cancel' : '取消'}</button>
-                      <button onClick={handleReport} className="flex-1 py-1.5 rounded-lg text-xs bg-orange-500/80 text-white hover:bg-orange-500">{isEn ? 'Report' : '檢舉'}</button>
+                      <button onClick={() => { setShowReport(false); setReportReason('') }}
+                        className="flex-1 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 hover:bg-white/10">
+                        {isEn ? 'Cancel' : '取消'}
+                      </button>
+                      <button onClick={handleReport} disabled={!reportReason || reportSubmitting}
+                        className="flex-1 py-1.5 rounded-lg text-xs bg-orange-500/80 text-white hover:bg-orange-500 disabled:opacity-40 transition-colors">
+                        {reportSubmitting ? '...' : (isEn ? 'Submit' : '送出')}
+                      </button>
                     </div>
                   </div>
                 )}
-                {reported && <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl px-3 py-2 text-xs text-orange-400 w-36 shadow-xl">{isEn ? 'Reported ✓' : '已檢舉 ✓'}</div>}
+                {reported && (
+                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl px-3 py-2 text-xs text-orange-400 w-32 shadow-xl text-center">
+                    {isEn ? 'Reported ✓' : '已檢舉 ✓'}
+                  </div>
+                )}
               </div>
             </div>
 
