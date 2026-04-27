@@ -24,7 +24,6 @@ interface ReportedQuestion {
   option_b: string
   status: string
   created_at: string
-  user_id: string
   category: string
   reportCount: number
   reasons: string[]
@@ -48,12 +47,13 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
   const [reports, setReports] = useState<ReportedQuestion[]>([])
+  const [reportError, setReportError] = useState<string | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const [actionId, setActionId] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -65,13 +65,26 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authed) return
-    fetch('/api/admin/stats').then(r => r.json()).then(setStats)
+    fetch('/api/admin/stats').then(r => r.json()).then(d => {
+      if (!d.error) setStats(d)
+    })
   }, [authed])
 
   const loadReports = useCallback(async () => {
     setLoading(true)
-    const data = await fetch('/api/admin/reports').then(r => r.json())
-    setReports(data)
+    setReportError(null)
+    try {
+      const res = await fetch('/api/admin/reports')
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        setReportError(data.error ?? `HTTP ${res.status}`)
+        setReports([])
+      } else {
+        setReports(Array.isArray(data) ? data : [])
+      }
+    } catch (e) {
+      setReportError(String(e))
+    }
     setLoading(false)
   }, [])
 
@@ -81,7 +94,7 @@ export default function AdminPage() {
     if (search) params.set('q', search)
     if (statusFilter) params.set('status', statusFilter)
     const data = await fetch(`/api/admin/questions?${params}`).then(r => r.json())
-    setQuestions(data)
+    setQuestions(Array.isArray(data) ? data : [])
     setLoading(false)
   }, [search, statusFilter])
 
@@ -91,23 +104,44 @@ export default function AdminPage() {
     if (tab === 'questions') loadQuestions()
   }, [authed, tab, loadReports, loadQuestions])
 
-  function showToast(msg: string) {
-    setToast(msg)
+  function showToast(msg: string, type: 'success' | 'error' = 'success') {
+    setToast({ msg, type })
     setTimeout(() => setToast(null), 2500)
   }
 
   async function deleteQuestion(id: string) {
-    setDeleting(id)
-    await fetch('/api/admin/questions', {
+    setActionId(id + ':delete')
+    const res = await fetch('/api/admin/questions', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
-    setDeleting(null)
-    showToast('已刪除')
-    if (tab === 'reports') loadReports()
-    if (tab === 'questions') loadQuestions()
-    setStats(s => s ? { ...s, totalQuestions: s.totalQuestions - 1 } : s)
+    setActionId(null)
+    if (res.ok) {
+      showToast('已刪除題目')
+      loadReports()
+      loadQuestions()
+      setStats(s => s ? { ...s, totalQuestions: s.totalQuestions - 1, totalReports: Math.max(0, s.totalReports - 1) } : s)
+    } else {
+      showToast('刪除失敗', 'error')
+    }
+  }
+
+  async function dismissReports(questionId: string) {
+    setActionId(questionId + ':dismiss')
+    const res = await fetch('/api/admin/reports/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: questionId }),
+    })
+    setActionId(null)
+    if (res.ok) {
+      showToast('已忽略，檢舉紀錄清除')
+      setReports(prev => prev.filter(r => r.id !== questionId))
+      setStats(s => s ? { ...s, totalReports: Math.max(0, s.totalReports - 1) } : s)
+    } else {
+      showToast('忽略失敗', 'error')
+    }
   }
 
   if (!authed) return null
@@ -121,8 +155,12 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500/20 border border-green-500/30 rounded-2xl px-5 py-3 text-sm text-green-400 shadow-xl">
-          {toast}
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-5 py-3 text-sm shadow-xl border ${
+          toast.type === 'error'
+            ? 'bg-red-500/20 border-red-500/30 text-red-400'
+            : 'bg-green-500/20 border-green-500/30 text-green-400'
+        }`}>
+          {toast.msg}
         </div>
       )}
 
@@ -139,9 +177,9 @@ export default function AdminPage() {
           <button key={key} onClick={() => setTab(key)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === key ? 'gradient-bg text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
             {label}
-            {key === 'reports' && stats?.totalReports ? (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-red-500/80">{stats.totalReports}</span>
-            ) : null}
+            {key === 'reports' && (stats?.totalReports ?? 0) > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-red-500/80">{stats!.totalReports}</span>
+            )}
           </button>
         ))}
       </div>
@@ -166,7 +204,6 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-
             <div className="card p-5">
               <p className="text-sm text-gray-400 mb-3">快速連結</p>
               <div className="flex flex-wrap gap-2">
@@ -191,9 +228,23 @@ export default function AdminPage() {
               <h2 className="text-lg font-bold">被檢舉問題</h2>
               <button onClick={loadReports} className="text-xs text-gray-500 hover:text-white transition-colors">↻ 重新整理</button>
             </div>
+
             {loading ? (
               <div className="flex justify-center mt-20">
                 <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-500 rounded-full animate-spin" />
+              </div>
+            ) : reportError ? (
+              <div className="card p-5 border-red-500/20 mt-4">
+                <p className="text-red-400 text-sm font-medium mb-1">⚠️ 載入失敗</p>
+                <p className="text-gray-500 text-xs font-mono">{reportError}</p>
+                <p className="text-gray-600 text-xs mt-3">可能原因：reports 資料表不存在，請先在 Supabase 執行 migration。</p>
+                <pre className="bg-white/4 rounded-xl p-3 text-xs text-gray-400 mt-2 overflow-x-auto">{`CREATE TABLE IF NOT EXISTS reports (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  question_id uuid REFERENCES questions(id) ON DELETE CASCADE,
+  reporter_id uuid REFERENCES auth.users(id),
+  reason text,
+  created_at timestamptz DEFAULT now()
+);`}</pre>
               </div>
             ) : reports.length === 0 ? (
               <div className="text-center mt-20 text-gray-600">
@@ -203,42 +254,56 @@ export default function AdminPage() {
             ) : (
               <div className="space-y-3">
                 {reports.map(q => (
-                  <div key={q.id} className="card p-5 border-red-500/10">
+                  <div key={q.id} className="card p-5 border-red-500/15">
                     <div className="flex items-start gap-4">
-                      <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
-                        <span className="text-red-400 font-bold text-sm">{q.reportCount}</span>
+                      {/* Report count badge */}
+                      <div className="shrink-0 w-11 h-11 rounded-full bg-red-500/15 border border-red-500/20 flex flex-col items-center justify-center">
+                        <span className="text-red-400 font-bold text-base leading-none">{q.reportCount}</span>
+                        <span className="text-red-500/60 text-[9px]">檢舉</span>
                       </div>
+
+                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium mb-1 leading-snug">{q.question_text}</p>
+                        <p className="text-white font-medium leading-snug mb-0.5">{q.question_text}</p>
                         <p className="text-gray-500 text-xs mb-2">{q.option_a} / {q.option_b}</p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className={`px-2 py-0.5 rounded-full ${q.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/6 text-gray-500'}`}>
-                            {q.status}
+
+                        <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
+                          <span className={`px-2 py-0.5 rounded-full font-medium ${q.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/6 text-gray-500'}`}>
+                            {q.status === 'active' ? '進行中' : q.status}
                           </span>
                           {q.category && <span className="text-gray-600">{q.category}</span>}
-                          <span className="text-gray-600">{new Date(q.created_at).toLocaleDateString('zh-TW')}</span>
+                          <span className="text-gray-700">{new Date(q.created_at).toLocaleDateString('zh-TW')}</span>
                         </div>
+
                         {q.reasons.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
+                          <div className="flex flex-wrap gap-1 mb-1.5">
                             {q.reasons.map(r => (
                               <span key={r} className="px-2 py-0.5 rounded-full text-xs bg-orange-500/15 text-orange-400 border border-orange-500/20">{r}</span>
                             ))}
                           </div>
                         )}
                         {q.latestReport && (
-                          <p className="text-xs text-gray-700 mt-1">最近檢舉：{new Date(q.latestReport).toLocaleString('zh-TW')}</p>
+                          <p className="text-xs text-gray-700">最近：{new Date(q.latestReport).toLocaleString('zh-TW')}</p>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 shrink-0">
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 shrink-0 min-w-[80px]">
                         <Link href={`/result/${q.id}`} target="_blank"
                           className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-gray-400 hover:bg-white/5 transition-colors text-center">
                           查看
                         </Link>
                         <button
+                          onClick={() => dismissReports(q.id)}
+                          disabled={actionId === q.id + ':dismiss'}
+                          className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-gray-400 hover:bg-white/8 transition-colors disabled:opacity-40">
+                          {actionId === q.id + ':dismiss' ? '...' : '忽略'}
+                        </button>
+                        <button
                           onClick={() => deleteQuestion(q.id)}
-                          disabled={deleting === q.id}
-                          className="px-3 py-1.5 rounded-lg text-xs bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-50">
-                          {deleting === q.id ? '刪除中...' : '刪除題目'}
+                          disabled={actionId === q.id + ':delete'}
+                          className="px-3 py-1.5 rounded-lg text-xs bg-red-500/80 text-white hover:bg-red-500 transition-colors disabled:opacity-40">
+                          {actionId === q.id + ':delete' ? '...' : '刪除'}
                         </button>
                       </div>
                     </div>
@@ -290,7 +355,7 @@ export default function AdminPage() {
                       <p className="text-white text-sm font-medium truncate">{q.question_text}</p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                         <span className={`px-2 py-0.5 rounded-full ${q.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/6 text-gray-500'}`}>
-                          {q.status}
+                          {q.status === 'active' ? '進行中' : q.status}
                         </span>
                         {q.category && <span>{q.category}</span>}
                         <span>{new Date(q.created_at).toLocaleDateString('zh-TW')}</span>
@@ -303,9 +368,9 @@ export default function AdminPage() {
                       </Link>
                       <button
                         onClick={() => deleteQuestion(q.id)}
-                        disabled={deleting === q.id}
+                        disabled={actionId === q.id + ':delete'}
                         className="px-3 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors disabled:opacity-50">
-                        {deleting === q.id ? '...' : '刪除'}
+                        {actionId === q.id + ':delete' ? '...' : '刪除'}
                       </button>
                     </div>
                   </div>
