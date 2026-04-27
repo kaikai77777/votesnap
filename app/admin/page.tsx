@@ -4,10 +4,21 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { CATEGORIES } from '@/types'
 
 const ADMIN_EMAIL = 'jchenkai29@gmail.com'
 
-type Tab = 'overview' | 'reports' | 'questions'
+type Tab = 'overview' | 'reports' | 'questions' | 'bank'
+
+interface BankQuestion {
+  id: string
+  question_text: string
+  option_a: string
+  option_b: string
+  category: string
+  duration_minutes: number
+  created_at: string
+}
 
 interface Stats {
   totalQuestions: number
@@ -61,6 +72,14 @@ export default function AdminPage() {
   const [batchReason, setBatchReason] = useState('inappropriate')
   const [batchLoading, setBatchLoading] = useState(false)
 
+  // Question bank
+  const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([])
+  const [bankLoading, setBankLoading] = useState(false)
+  const [bankSaving, setBankSaving] = useState(false)
+  const [bankDeleting, setBankDeleting] = useState<string | null>(null)
+  const [showBankForm, setShowBankForm] = useState(false)
+  const [newQ, setNewQ] = useState({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
+
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -108,7 +127,8 @@ export default function AdminPage() {
     if (!authed) return
     if (tab === 'reports') loadReports()
     if (tab === 'questions') loadQuestions()
-  }, [authed, tab, loadReports, loadQuestions])
+    if (tab === 'bank') loadBank()
+  }, [authed, tab, loadReports, loadQuestions, loadBank])
 
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type })
@@ -180,6 +200,50 @@ export default function AdminPage() {
     }
   }
 
+  const loadBank = useCallback(async () => {
+    setBankLoading(true)
+    const data = await fetch('/api/admin/question-bank').then(r => r.json())
+    setBankQuestions(Array.isArray(data) ? data : [])
+    setBankLoading(false)
+  }, [])
+
+  async function addBankQuestion() {
+    if (!newQ.question_text.trim() || !newQ.option_a.trim() || !newQ.option_b.trim()) return
+    setBankSaving(true)
+    const res = await fetch('/api/admin/question-bank', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newQ),
+    })
+    setBankSaving(false)
+    if (res.ok) {
+      const data = await res.json()
+      setBankQuestions(prev => [data, ...prev])
+      setNewQ({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
+      setShowBankForm(false)
+      showToast('✓ 已新增到題庫')
+    } else {
+      const d = await res.json().catch(() => ({}))
+      showToast(d.error ?? '新增失敗', 'error')
+    }
+  }
+
+  async function deleteBankQuestion(id: string) {
+    setBankDeleting(id)
+    const res = await fetch('/api/admin/question-bank/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    setBankDeleting(null)
+    if (res.ok) {
+      setBankQuestions(prev => prev.filter(q => q.id !== id))
+      showToast('已從題庫移除')
+    } else {
+      showToast('刪除失敗', 'error')
+    }
+  }
+
   async function dismissReports(questionId: string) {
     setActionId(questionId + ':dismiss')
     const res = await fetch('/api/admin/reports/dismiss', {
@@ -202,7 +266,8 @@ export default function AdminPage() {
   const TABS: { key: Tab; label: string }[] = [
     { key: 'overview', label: '📊 概覽' },
     { key: 'reports', label: '🚨 檢舉' },
-    { key: 'questions', label: '📋 問題管理' },
+    { key: 'questions', label: '📋 問題' },
+    { key: 'bank', label: '📚 題庫' },
   ]
 
   return (
@@ -536,6 +601,143 @@ export default function AdminPage() {
                         disabled={actionId === q.id + ':delete'}
                         className="px-3 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors disabled:opacity-50">
                         {actionId === q.id + ':delete' ? '...' : '刪除'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {/* Question Bank */}
+        {tab === 'bank' && (
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold">自動發文題庫</h2>
+                <p className="text-xs text-gray-500 mt-0.5">共 {bankQuestions.length} 題 · 每天台灣 8am–10pm 每小時自動發 3 則</p>
+              </div>
+              <button
+                onClick={() => setShowBankForm(v => !v)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${showBankForm ? 'bg-white/10 text-gray-300' : 'gradient-bg text-white'}`}
+              >
+                {showBankForm ? '✕ 收起' : '＋ 新增題目'}
+              </button>
+            </div>
+
+            {/* Add form */}
+            {showBankForm && (
+              <div className="card p-5 mb-4 border-violet-500/20">
+                <p className="text-xs text-violet-400 font-medium mb-4">新增問題到題庫</p>
+
+                {/* Question text */}
+                <div className="mb-3">
+                  <label className="text-xs text-gray-500 mb-1.5 block">問題內容 *</label>
+                  <textarea
+                    value={newQ.question_text}
+                    onChange={e => setNewQ(q => ({ ...q, question_text: e.target.value }))}
+                    placeholder="例如：你是夜貓族還是早鳥族？"
+                    rows={2}
+                    className="w-full bg-[#252525] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder-gray-600 resize-none"
+                  />
+                </div>
+
+                {/* Options */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1.5 block">選項 A *</label>
+                    <input
+                      value={newQ.option_a}
+                      onChange={e => setNewQ(q => ({ ...q, option_a: e.target.value }))}
+                      placeholder="例如：夜貓族"
+                      className="w-full bg-[#252525] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1.5 block">選項 B *</label>
+                    <input
+                      value={newQ.option_b}
+                      onChange={e => setNewQ(q => ({ ...q, option_b: e.target.value }))}
+                      placeholder="例如：早鳥族"
+                      className="w-full bg-[#252525] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder-gray-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Category + Duration */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1.5 block">分類</label>
+                    <select
+                      value={newQ.category}
+                      onChange={e => setNewQ(q => ({ ...q, category: e.target.value }))}
+                      className="w-full bg-[#252525] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-300 focus:outline-none"
+                    >
+                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1.5 block">發布時長</label>
+                    <select
+                      value={newQ.duration_minutes}
+                      onChange={e => setNewQ(q => ({ ...q, duration_minutes: Number(e.target.value) }))}
+                      className="w-full bg-[#252525] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-300 focus:outline-none"
+                    >
+                      <option value={720}>12 小時</option>
+                      <option value={1440}>1 天</option>
+                      <option value={2880}>2 天</option>
+                      <option value={4320}>3 天</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  onClick={addBankQuestion}
+                  disabled={bankSaving || !newQ.question_text.trim() || !newQ.option_a.trim() || !newQ.option_b.trim()}
+                  className="w-full py-3 rounded-xl text-sm font-semibold gradient-bg text-white disabled:opacity-40 transition-all"
+                >
+                  {bankSaving ? '新增中...' : '＋ 加入題庫'}
+                </button>
+              </div>
+            )}
+
+            {/* List */}
+            {bankLoading ? (
+              <div className="flex justify-center mt-16">
+                <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-500 rounded-full animate-spin" />
+              </div>
+            ) : bankQuestions.length === 0 ? (
+              <div className="text-center mt-16 text-gray-600">
+                <p className="text-4xl mb-3">📭</p>
+                <p className="text-sm mb-4">題庫是空的</p>
+                <button onClick={() => setShowBankForm(true)} className="btn-gradient px-6 py-2.5 rounded-xl text-sm">
+                  新增第一題
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {bankQuestions.map(q => (
+                  <div key={q.id} className="card p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium leading-snug mb-2">{q.question_text}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 text-xs font-medium">A: {q.option_a}</span>
+                          <span className="px-2.5 py-1 rounded-lg bg-white/8 text-gray-300 text-xs font-medium">B: {q.option_b}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500">{q.category}</span>
+                          <span>·</span>
+                          <span>{q.duration_minutes >= 1440 ? `${q.duration_minutes / 1440} 天` : `${q.duration_minutes / 60} 小時`}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteBankQuestion(q.id)}
+                        disabled={bankDeleting === q.id}
+                        className="shrink-0 w-8 h-8 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors flex items-center justify-center text-sm disabled:opacity-40"
+                      >
+                        {bankDeleting === q.id ? '·' : '🗑'}
                       </button>
                     </div>
                   </div>
