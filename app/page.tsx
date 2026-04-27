@@ -156,7 +156,7 @@ export default function LandingPage() {
           <Link href="/rules" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '社群規範' : 'Rules'}</Link>
           <Link href="/pricing" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '定價' : 'Pricing'}</Link>
         </div>
-        <p>votesnap.online · {new Date().getFullYear()}</p>
+        <p>© 2025{new Date().getFullYear() > 2025 ? `–${new Date().getFullYear()}` : ''} votesnap.online</p>
       </footer>
     </div>
   )
