@@ -1,0 +1,17 @@
+name: Auto Post Questions
+
+on:
+  schedule:
+    # Every hour UTC 0-14 (TW 8am-10pm), Mon-Sun
+    - cron: '0 0-14 * * *'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call auto-post API
+        run: |
+          curl -s -X GET "${{ secrets.SITE_URL }}/api/cron/auto-post" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -w "\nHTTP %{http_code}"
