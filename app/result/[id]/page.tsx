@@ -9,6 +9,7 @@ import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
 import ShareModal from '@/components/ShareModal'
+import { CommentSection } from '@/components/CommentSection'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
 
@@ -374,6 +375,16 @@ function ResultContent() {
             <span>{extending ? (isEn ? 'Extending...' : '延長中...') : (isEn ? 'Extend +30 min (Pro)' : '延長 30 分鐘 (Pro)')}</span>
           </button>
         )}
+
+        <div className="mt-2 border-t border-white/6 pt-2">
+          <CommentSection
+            questionId={id}
+            currentUserId={currentUserId}
+            currentDisplayName={displayName}
+            anonymousId={anonId}
+            isEn={isEn}
+          />
+        </div>
       </main>
 
       {showShare && question && (
