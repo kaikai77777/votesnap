@@ -133,7 +133,8 @@ export default function AdminPage() {
       loadQuestions()
       setStats(s => s ? { ...s, totalQuestions: s.totalQuestions - 1, totalReports: Math.max(0, s.totalReports - 1) } : s)
     } else {
-      showToast('刪除失敗', 'error')
+      const d = await res.json().catch(() => ({}))
+      showToast(`刪除失敗: ${d.error ?? res.status}`, 'error')
     }
   }
 

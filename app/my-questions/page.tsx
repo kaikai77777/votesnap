@@ -148,6 +148,9 @@ export default function MyQuestionsPage() {
     })
     if (res.ok) {
       setQuestions(prev => prev.filter(q => q.id !== id))
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(`刪除失敗: ${d.error ?? res.status}`)
     }
     setConfirmDeleteId(null)
     setDeleting(false)
