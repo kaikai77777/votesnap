@@ -140,7 +140,7 @@ function ResultContent() {
     } else {
       const { error: rxErr } = await addReaction(id, emoji, currentUserId, currentUserId ? null : anonId)
       if (!rxErr) {
-        setMyReactions(prev => new Set([...prev, emoji]))
+        setMyReactions(prev => new Set(Array.from(prev).concat(emoji)))
         setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] ?? 0) + 1 }))
       }
     }

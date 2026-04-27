@@ -166,7 +166,7 @@ export async function getDemographicStats(questionId: string) {
     .from('votes').select('vote, user_id').eq('question_id', questionId)
   if (!votes || votes.length === 0) return null
 
-  const userIds = [...new Set(votes.map(v => v.user_id))]
+  const userIds = Array.from(new Set(votes.map(v => v.user_id)))
   const { data: profiles } = await supabase
     .from('profiles').select('id, age_range, gender').in('id', userIds)
 
