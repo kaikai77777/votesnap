@@ -54,6 +54,7 @@ function ResultContent() {
   const [reactions, setReactions] = useState<Record<string, number>>({})
   const [myReactions, setMyReactions] = useState<Set<string>>(new Set())
   const [anonId, setAnonId] = useState<string>('')
+  const [imgIndex, setImgIndex] = useState(0)
 
   const isCreated = searchParams.get('created') === 'true'
 
@@ -244,7 +245,40 @@ function ResultContent() {
           )}
         </div>
 
-        <h1 className="text-2xl font-bold text-white leading-snug mb-8">{question.question_text}</h1>
+        <h1 className="text-2xl font-bold text-white leading-snug mb-6">{question.question_text}</h1>
+
+        {/* Question images */}
+        {(question.image_urls?.filter(Boolean).length ?? 0) > 0 && (() => {
+          const images = question.image_urls!.filter(Boolean)
+          return (
+            <div className="relative mb-6 rounded-2xl overflow-hidden bg-black">
+              <img
+                src={images[imgIndex]}
+                alt=""
+                className="w-full max-h-72 object-contain block"
+              />
+              {images.length > 1 && (
+                <>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setImgIndex(i)}
+                        className={`h-1.5 rounded-full transition-all ${i === imgIndex ? 'bg-white w-5' : 'bg-white/40 w-1.5'}`}
+                      />
+                    ))}
+                  </div>
+                  {imgIndex > 0 && (
+                    <button onClick={() => setImgIndex(i => i - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white text-xl">‹</button>
+                  )}
+                  {imgIndex < images.length - 1 && (
+                    <button onClick={() => setImgIndex(i => i + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white text-xl">›</button>
+                  )}
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         <div className="card p-6 mb-4 space-y-5">
           {optionBars.map((opt, i) => (
