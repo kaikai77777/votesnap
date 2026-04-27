@@ -37,9 +37,11 @@ export async function POST(req: NextRequest) {
     .eq('id', id)
     .single()
 
-  // Delete reports and soft-delete question
+  const reasonLabel = REASON_LABELS[reason] ?? reason ?? '違反使用規範'
+
+  // Delete reports and soft-delete question, store reason
   await admin.from('reports').delete().eq('question_id', id)
-  await admin.from('questions').update({ status: 'deleted' }).eq('id', id)
+  await admin.from('questions').update({ status: 'deleted', deleted_reason: reasonLabel }).eq('id', id)
 
   // Notify creator via push if they have a subscription
   if (question?.user_id) {
@@ -50,7 +52,6 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (profile?.push_subscription) {
-      const reasonLabel = REASON_LABELS[reason] ?? reason ?? '違反使用規範'
       try {
         await webpush.sendNotification(
           profile.push_subscription as webpush.PushSubscription,

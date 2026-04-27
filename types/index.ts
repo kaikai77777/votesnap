@@ -22,6 +22,7 @@ export interface Question {
   expires_at: string
   created_at: string
   image_urls: string[] | null
+  deleted_reason?: string | null
 }
 
 export interface Vote {

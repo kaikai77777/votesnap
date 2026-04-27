@@ -60,6 +60,7 @@ function ResultContent() {
   const fetchData = useCallback(async () => {
     const { data: q, error: qErr } = await getQuestionById(id)
     if (qErr || !q) { setError('找不到這個問題'); setLoading(false); return }
+    if (q.status === 'deleted') { setError('deleted:' + (q.deleted_reason ?? '')); setLoading(false); return }
     setQuestion(q)
     const { data: votes } = await getVotesByQuestion(id)
     setStats(calcVoteStats(votes ?? []))
@@ -153,12 +154,40 @@ function ResultContent() {
   }
 
   if (error || !question) {
+    const isDeleted = error?.startsWith('deleted:')
+    const deletedReason = isDeleted ? error!.slice('deleted:'.length) : ''
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-center px-4">
-        <div>
-          <p className="text-gray-400 mb-4">{error || '找不到問題'}</p>
-          <Link href="/vote" className="btn-gradient px-6 py-3 rounded-2xl text-sm">Back to Vote</Link>
-        </div>
+        {isDeleted ? (
+          <div className="max-w-sm w-full">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+              <svg viewBox="0 0 24 24" className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <h2 className="text-white font-bold text-lg mb-2">{isEn ? 'This poll was removed' : '此投票已被移除'}</h2>
+            <p className="text-gray-500 text-sm mb-2 leading-relaxed">
+              {isEn
+                ? 'Our team reviewed this poll and found it violates our community guidelines.'
+                : '管理員審核後認定此投票違反社群規範，已予以下架。'}
+            </p>
+            {deletedReason && (
+              <div className="mt-3 mb-5 px-4 py-3 rounded-2xl bg-white/5 border border-white/8">
+                <p className="text-xs text-gray-500 mb-0.5">{isEn ? 'Reason' : '下架原因'}</p>
+                <p className="text-sm text-gray-300">{deletedReason}</p>
+              </div>
+            )}
+            {!deletedReason && <div className="mb-5" />}
+            <Link href="/vote" className="btn-gradient px-6 py-3 rounded-2xl text-sm inline-block">
+              {isEn ? '← Back to Vote' : '← 回到投票'}
+            </Link>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-400 mb-4">{error || '找不到問題'}</p>
+            <Link href="/vote" className="btn-gradient px-6 py-3 rounded-2xl text-sm">Back to Vote</Link>
+          </div>
+        )}
       </div>
     )
   }

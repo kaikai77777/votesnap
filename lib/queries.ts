@@ -115,6 +115,10 @@ export async function castVote(
   anonymousId?: string | null
 ) {
   const supabase = createClient()
+  const { data: q } = await supabase.from('questions').select('status, expires_at').eq('id', questionId).single()
+  if (!q || q.status !== 'active' || new Date(q.expires_at) < new Date()) {
+    return { data: null, error: { message: 'Question is no longer active' } }
+  }
   return supabase
     .from('votes')
     .insert({ question_id: questionId, user_id: userId ?? null, anonymous_id: anonymousId ?? null, vote })
