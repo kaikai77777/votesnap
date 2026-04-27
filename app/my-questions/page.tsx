@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getUserQuestions, calcVoteStats, isExpired, getProfile, deleteQuestion } from '@/lib/queries'
+import { getUserQuestions, calcVoteStats, isExpired, getProfile } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import ShareModal from '@/components/ShareModal'
@@ -141,8 +141,14 @@ export default function MyQuestionsPage() {
 
   async function handleDelete(id: string) {
     setDeleting(true)
-    await deleteQuestion(id)
-    setQuestions(prev => prev.filter(q => q.id !== id))
+    const res = await fetch('/api/questions/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (res.ok) {
+      setQuestions(prev => prev.filter(q => q.id !== id))
+    }
     setConfirmDeleteId(null)
     setDeleting(false)
   }
