@@ -152,9 +152,13 @@ export default function LandingPage() {
         <div className="flex items-center justify-center gap-2 mb-3">
           <LogoWordmark className="text-base" />
         </div>
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <Link href="/rules" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '社群規範' : 'Rules'}</Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mb-2">
+          <Link href="/about" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '關於' : 'About'}</Link>
           <Link href="/pricing" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '定價' : 'Pricing'}</Link>
+          <Link href="/rules" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '社群規範' : 'Rules'}</Link>
+          <Link href="/terms" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '服務條款' : 'Terms'}</Link>
+          <Link href="/privacy" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '隱私政策' : 'Privacy'}</Link>
+          <Link href="/refund" className="hover:text-gray-400 transition-colors">{lang === 'zh' ? '退款政策' : 'Refund'}</Link>
         </div>
         <p>© 2025{new Date().getFullYear() > 2025 ? `–${new Date().getFullYear()}` : ''} votesnap.online</p>
       </footer>
