@@ -1,39 +1,48 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/lib/i18n'
 
-export default function PricingPage() {
+function PricingContent() {
   const { t } = useLang()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const isEn = t('price.free') === 'Free'
 
   const [isPro, setIsPro] = useState(false)
-  const [expiresAt, setExpiresAt] = useState<string | null>(null)
-  const [cancelling, setCancelling] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [checking, setChecking] = useState(false)
+
+  const success = searchParams.get('success') === 'true'
+  const cancelled = searchParams.get('cancelled') === 'true'
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      const { data } = await supabase.from('profiles').select('is_pro, pro_expires_at').eq('id', user.id).single()
+      if (!user) { setLoading(false); return }
+      setLoggedIn(true)
+      const { data } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
       setIsPro(data?.is_pro ?? false)
-      setExpiresAt(data?.pro_expires_at ?? null)
+      setLoading(false)
     })
   }, [])
 
-  async function handleCancel() {
-    setCancelling(true)
-    await fetch('/api/cancel-pro', { method: 'POST' })
-    setDone(true)
-    setCancelling(false)
-    setTimeout(() => router.push('/vote'), 2000)
+  async function handleCheckout() {
+    if (checking) return
+    setChecking(true)
+    const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+    if (res.ok) {
+      const { url } = await res.json()
+      window.location.href = url
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(d.error ?? 'Checkout failed')
+      setChecking(false)
+    }
   }
 
   const FREE_FEATURES = isEn
@@ -44,7 +53,6 @@ export default function PricingPage() {
     ? [
         'Unlimited questions (free: 5/day)',
         'Demographic breakdown (age & gender)',
-        'AI result insights (auto-generated)',
         'Custom poll duration: 5 min – 7 days',
         'Extend poll time +30 min',
         'Priority feed exposure + Pro badge',
@@ -52,7 +60,6 @@ export default function PricingPage() {
     : [
         '無限發問（免費版每日 5 題）',
         '投票者人口統計（年齡、性別分析）',
-        'AI 結果洞察（每題自動生成）',
         '自訂投票時效（5 分鐘 ～ 7 天任意設定）',
         '延長投票時間 +30 分鐘',
         '優先曝光排序 + Pro 徽章',
@@ -64,7 +71,8 @@ export default function PricingPage() {
     { q: t('price.faq3q'), a: t('price.faq3a') },
   ]
 
-  if (isPro) {
+  // Already Pro
+  if (!loading && isPro) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] text-white">
         <Navbar />
@@ -72,50 +80,31 @@ export default function PricingPage() {
           <div className="text-center mb-10">
             <div className="text-5xl mb-4">✦</div>
             <h1 className="text-3xl font-extrabold gradient-text mb-2">Pro 會員</h1>
-            <p className="text-gray-500 text-sm">{isEn ? 'Your subscription is active' : '您的訂閱目前有效'}</p>
+            <p className="text-gray-500 text-sm">{isEn ? 'You have lifetime Pro access' : '您已擁有永久 Pro 資格'}</p>
           </div>
 
-          <div className="card p-6 mb-4 space-y-3">
+          <div className="card p-6 mb-6 space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">{isEn ? 'Status' : '狀態'}</span>
-              <span className="text-green-400 font-medium">{isEn ? '● Active' : '● 訂閱中'}</span>
+              <span className="text-green-400 font-medium">{isEn ? '● Active' : '● 已啟用'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">{isEn ? 'Plan' : '方案'}</span>
-              <span className="text-white">Pro · $4 / {isEn ? 'month' : '月'}</span>
+              <span className="text-white">Pro · {isEn ? 'One-time $4' : '一次買斷 $4'}</span>
             </div>
-            {expiresAt && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{isEn ? 'Renews / Expires' : '到期日'}</span>
-                <span className="text-white">
-                  {new Date(expiresAt).toLocaleDateString(isEn ? 'en-US' : 'zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
-              </div>
-            )}
           </div>
 
-          {done ? (
-            <div className="text-center py-6 text-green-400 font-medium">
-              {isEn ? '✓ Cancelled. Redirecting...' : '✓ 已取消，正在跳轉...'}
-            </div>
-          ) : showConfirm ? (
-            <div className="card p-5 border border-red-500/20">
-              <p className="text-sm text-gray-300 mb-1 font-medium">{isEn ? 'Cancel subscription?' : '確定要取消訂閱？'}</p>
-              <p className="text-xs text-gray-500 mb-4">{isEn ? 'No refunds will be issued. Your Pro access ends immediately.' : '取消後不予退款，Pro 功能將立即停用。'}</p>
-              <div className="flex gap-2">
-                <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-gray-400 hover:bg-white/5">
-                  {isEn ? 'Keep Pro' : '保留訂閱'}
-                </button>
-                <button onClick={handleCancel} disabled={cancelling} className="flex-1 py-2.5 rounded-xl text-sm bg-red-500/80 text-white hover:bg-red-500 disabled:opacity-50">
-                  {cancelling ? (isEn ? 'Cancelling...' : '取消中...') : (isEn ? 'Confirm Cancel' : '確認取消')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => setShowConfirm(true)} className="w-full py-3 rounded-2xl border border-white/8 text-gray-500 text-sm hover:text-red-400 hover:border-red-500/30 transition-colors">
-              {isEn ? 'Cancel subscription' : '取消訂閱'}
-            </button>
-          )}
+          <ul className="space-y-3 mb-8">
+            {PRO_FEATURES.map(f => (
+              <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                <span className="gradient-text font-bold">✓</span>{f}
+              </li>
+            ))}
+          </ul>
+
+          <Link href="/vote" className="block w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium">
+            {isEn ? '← Back to Vote' : '← 回到投票'}
+          </Link>
         </main>
       </div>
     )
@@ -126,6 +115,23 @@ export default function PricingPage() {
       <Navbar />
 
       <main className="pt-24 pb-20 px-4">
+
+        {/* Success banner */}
+        {success && (
+          <div className="max-w-2xl mx-auto mb-8 px-5 py-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-center animate-slide-up">
+            <p className="text-green-400 font-medium text-sm">
+              {isEn ? '🎉 Payment successful! Your Pro access is now active.' : '🎉 付款成功！Pro 功能已立即開啟。'}
+            </p>
+          </div>
+        )}
+        {cancelled && (
+          <div className="max-w-2xl mx-auto mb-8 px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+            <p className="text-gray-400 text-sm">
+              {isEn ? 'Payment cancelled. Your plan was not changed.' : '已取消付款，方案未變更。'}
+            </p>
+          </div>
+        )}
+
         <div className="text-center mb-12 max-w-xl mx-auto">
           <h1 className="text-4xl font-extrabold mb-4">
             {isEn ? 'Upgrade to ' : '升級 '}
@@ -141,7 +147,6 @@ export default function PricingPage() {
             <p className="text-gray-500 text-sm mb-6">{t('price.freeSub')}</p>
             <div className="mb-6">
               <span className="text-5xl font-extrabold">$0</span>
-              <span className="text-gray-500 text-sm ml-2">{t('price.month')}</span>
             </div>
             <Link href="/vote" className="block w-full py-3.5 rounded-2xl border border-white/15 text-center text-white font-medium hover:bg-white/5 transition-colors mb-6">
               {isEn ? 'Current plan' : '目前方案'}
@@ -162,19 +167,34 @@ export default function PricingPage() {
               <div className="relative">
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-xl font-bold">{t('price.pro')}</h2>
-                  <span className="px-2 py-0.5 rounded-full text-xs gradient-bg font-medium">{t('price.comingSoon')}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-violet-500/20 text-violet-300 font-medium border border-violet-500/20">
+                    {isEn ? 'One-time' : '買斷'}
+                  </span>
                 </div>
                 <p className="text-gray-500 text-sm mb-6">{t('price.proSub')}</p>
-                <div className="mb-6">
+                <div className="mb-2">
                   <span className="text-5xl font-extrabold gradient-text">$4</span>
-                  <span className="text-gray-500 text-sm ml-2">{t('price.month')}</span>
+                  <span className="text-gray-500 text-sm ml-2">{isEn ? 'one-time' : '永久使用'}</span>
                 </div>
-                <button
-                  disabled
-                  className="w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium opacity-50 cursor-not-allowed mb-6"
-                >
-                  {t('price.comingSoon')}
-                </button>
+                <p className="text-xs text-gray-600 mb-6">{isEn ? 'Pay once, use forever.' : '付一次，永久享有 Pro 功能。'}</p>
+
+                {loggedIn ? (
+                  <button
+                    onClick={handleCheckout}
+                    disabled={checking}
+                    className="w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium mb-6 hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {checking
+                      ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{isEn ? 'Redirecting...' : '跳轉中...'}</>
+                      : (isEn ? 'Upgrade to Pro →' : '立即升級 Pro →')
+                    }
+                  </button>
+                ) : (
+                  <Link href="/login" className="block w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium mb-6 hover:opacity-90 transition-opacity">
+                    {isEn ? 'Login to upgrade →' : '登入後升級 →'}
+                  </Link>
+                )}
+
                 <ul className="space-y-3">
                   {PRO_FEATURES.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
@@ -200,5 +220,17 @@ export default function PricingPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <PricingContent />
+    </Suspense>
   )
 }
