@@ -37,12 +37,26 @@ export default function PricingPage() {
   }
 
   const FREE_FEATURES = isEn
-    ? ['3 questions/day', 'Standard exposure', 'Basic result page']
-    : ['每日 3 個問題', '標準曝光排序', '基本結果頁']
+    ? ['5 questions/day', 'Voting history', 'Basic result page', 'Anonymous voting support']
+    : ['每日 5 個問題', '投票紀錄', '基本結果頁', '支援匿名投票']
 
   const PRO_FEATURES = isEn
-    ? ['Unlimited questions/day', '2× vote exposure', 'Priority distribution', 'Demographic breakdown', 'View your voting history & results']
-    : ['每日無限發問', '2× 投票曝光速度', '優先分發排序', '詳細人口統計', '查看自己投票過的結果']
+    ? [
+        '30 questions/day (free: 5)',
+        'Demographic breakdown (age & gender)',
+        'AI result insights (auto-generated)',
+        'Long-term polls: 3/7/30 days',
+        'Extend poll time +30 min',
+        'Priority feed exposure + Pro badge',
+      ]
+    : [
+        '每日 30 個問題（免費版 5 題）',
+        '投票者人口統計（年齡、性別分析）',
+        'AI 結果洞察（每題自動生成）',
+        '長期投票時效（3天 / 7天 / 30天）',
+        '延長投票時間 +30 分鐘',
+        '優先曝光排序 + Pro 徽章',
+      ]
 
   const FAQS = [
     { q: t('price.faq1q'), a: t('price.faq1a') },

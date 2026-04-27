@@ -97,7 +97,7 @@ export async function uploadQuestionImages(files: File[], questionId: string): P
 
 export async function castVote(
   questionId: string,
-  vote: 'A' | 'B',
+  vote: string,
   userId?: string | null,
   anonymousId?: string | null
 ) {

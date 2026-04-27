@@ -58,7 +58,8 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): st
 function drawOptionRow(
   ctx: CanvasRenderingContext2D,
   label: string, pct: number, votes: number,
-  isWinner: boolean, rowY: number, rowW: number, rowX: number
+  isWinner: boolean, rowY: number, rowW: number, rowX: number,
+  showStats = true
 ) {
   const R = 50
   const CX = rowX + R
@@ -86,15 +87,19 @@ function drawOptionRow(
   // % (right-aligned, same line)
   const RX = rowX + rowW
   ctx.font = `bold 82px ${F}`; ctx.textAlign = 'right'
-  if (isWinner) {
+  if (!showStats) {
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    ctx.fillText('?', RX, LINE_Y + 19)
+  } else if (isWinner) {
     const pw = ctx.measureText(`${pct}%`).width
     const pg = ctx.createLinearGradient(RX - pw - 10, 0, RX, 0)
     pg.addColorStop(0, '#EC4899'); pg.addColorStop(1, '#F97316')
     ctx.fillStyle = pg
+    ctx.fillText(`${pct}%`, RX, LINE_Y + 19)
   } else {
     ctx.fillStyle = '#4B5563'
+    ctx.fillText(`${pct}%`, RX, LINE_Y + 19)
   }
-  ctx.fillText(`${pct}%`, RX, LINE_Y + 19)
 
   // Progress bar — full width, below circle bottom
   const BY = LINE_Y + R + 18
@@ -199,10 +204,12 @@ export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>):
 
     const IW = CARD_W - CP * 2
     const IRX = CARD_X + CP
+    const showStats = props.totalVotes >= 5
+    const isHot = props.totalVotes > 50
     const aV = Math.round((props.pctA / 100) * props.totalVotes)
     const bV = props.totalVotes - aV
 
-    drawOptionRow(ctx, props.optionA, props.pctA, aV, props.pctA >= props.pctB, CARD_Y + CP, IW, IRX)
+    drawOptionRow(ctx, props.optionA, props.pctA, aV, props.pctA >= props.pctB, CARD_Y + CP, IW, IRX, showStats)
 
     const S1Y = CARD_Y + CP + ROW_H + SEP / 2
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1
@@ -210,7 +217,7 @@ export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>):
     ctx.beginPath(); ctx.moveTo(CARD_X + CP, S1Y); ctx.lineTo(CARD_X + CARD_W - CP, S1Y); ctx.stroke()
     ctx.setLineDash([])
 
-    drawOptionRow(ctx, props.optionB, props.pctB, bV, props.pctB > props.pctA, CARD_Y + CP + ROW_H + SEP, IW, IRX)
+    drawOptionRow(ctx, props.optionB, props.pctB, bV, props.pctB > props.pctA, CARD_Y + CP + ROW_H + SEP, IW, IRX, showStats)
 
     const S2Y = CARD_Y + CP + ROW_H + SEP + ROW_H + SEP / 2
     ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1
@@ -256,9 +263,9 @@ export function generateShareImage(props: Omit<Props, 'onClose' | 'resultUrl'>):
     })
 
     ctx.font = `bold 84px ${F}`; ctx.textAlign = 'center'
-    gradientText(ctx, '你也來投票！', W / 2, CTA_Y + 88)
+    gradientText(ctx, isHot ? '🔥 熱門投票' : showStats ? '你也來投票！' : '快來幫我選！', W / 2, CTA_Y + 88)
     ctx.font = `38px ${F}`; ctx.fillStyle = 'rgba(255,255,255,0.42)'
-    ctx.fillText('做不了決定？世界幫你選 ⚡', W / 2, CTA_Y + 156)
+    ctx.fillText(showStats ? '做不了決定？世界幫你選 ⚡' : `已有 ${props.totalVotes} 票，快來加入！`, W / 2, CTA_Y + 156)
 
     // ── Footer pill ──
     const FT_W = W - 80, FT_X = 40

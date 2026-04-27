@@ -75,7 +75,7 @@ export default function VotePage() {
     setTimeout(() => setToast(null), 2500)
   }
 
-  async function handleVote(vote: 'A' | 'B') {
+  async function handleVote(vote: string) {
     const q = questions[index] as DemoQuestion
     if (!q) return
 

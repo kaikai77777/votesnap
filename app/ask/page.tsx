@@ -16,6 +16,22 @@ const MAX_CHARS = 120
 const FREE_DURATIONS = [15, 60, 1440]
 const PRO_DURATIONS = [4320, 10080, 43200]
 
+const TEMPLATES_ZH = [
+  { q: '要不要主動傳訊息給他？', a: '傳！', b: '等對方' },
+  { q: '這件衣服值得買嗎？', a: '買！', b: '算了' },
+  { q: '消夜要吃什麼？', a: '麥當勞', b: '豆漿店' },
+  { q: '這樣做對嗎？', a: '對的', b: '重新考慮' },
+  { q: '要不要換工作？', a: '換！', b: '繼續撐' },
+]
+
+const TEMPLATES_EN = [
+  { q: 'Should I text first?', a: 'Do it!', b: 'Wait' },
+  { q: 'Is this outfit worth buying?', a: 'Buy it!', b: 'Pass' },
+  { q: 'What to eat tonight?', a: "McDonald's", b: 'Night market' },
+  { q: 'Am I making the right choice?', a: 'Yes!', b: 'Think again' },
+  { q: 'Should I quit my job?', a: 'Quit!', b: 'Stay' },
+]
+
 function durationLabel(m: number, isEn: boolean): string {
   if (m < 60) return isEn ? `${m} min` : `${m} 分鐘`
   if (m < 1440) return isEn ? `${m / 60} hr` : `${m / 60} 小時`
@@ -37,6 +53,10 @@ export default function AskPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [todayCount, setTodayCount] = useState(0)
+  const [aiInput, setAiInput] = useState('')
+  const [aiSuggestions, setAiSuggestions] = useState<Array<{ question: string; optionA: string; optionB: string }>>([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [showAi, setShowAi] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -52,6 +72,38 @@ export default function AskPage() {
       setTodayCount(data?.length ?? 0)
     })
   }, [router])
+
+  const TEMPLATES = isEn ? TEMPLATES_EN : TEMPLATES_ZH
+
+  function applyTemplate(tpl: typeof TEMPLATES[0]) {
+    setText(tpl.q)
+    setOptions([tpl.a, tpl.b])
+  }
+
+  async function fetchAiSuggestions() {
+    if (!aiInput.trim()) return
+    setAiLoading(true)
+    setAiSuggestions([])
+    try {
+      const res = await fetch('/api/ai-suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: aiInput, lang: isEn ? 'en' : 'zh' }),
+      })
+      const { suggestions } = await res.json()
+      setAiSuggestions(suggestions ?? [])
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  function applyAiSuggestion(s: { question: string; optionA: string; optionB: string }) {
+    setText(s.question)
+    setOptions([s.optionA, s.optionB])
+    setShowAi(false)
+    setAiSuggestions([])
+    setAiInput('')
+  }
 
   function updateOption(i: number, val: string) {
     setOptions(prev => prev.map((o, idx) => idx === i ? val.slice(0, 20) : o))
@@ -128,7 +180,61 @@ export default function AskPage() {
           </p>
         </div>
 
+        {/* AI suggest modal */}
+        {showAi && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowAi(false)}>
+            <div className="w-full max-w-sm bg-[#1C1C1E] rounded-3xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-white">✦ AI 幫我想題目</h3>
+                <button onClick={() => setShowAi(false)} className="text-gray-500 hover:text-white">×</button>
+              </div>
+              <input
+                value={aiInput}
+                onChange={e => setAiInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && fetchAiSuggestions()}
+                placeholder={isEn ? 'Describe your situation...' : '描述你的情境，例如：不知道要不要換手機'}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+                autoFocus
+              />
+              <button onClick={fetchAiSuggestions} disabled={aiLoading || !aiInput.trim()}
+                className="w-full btn-gradient py-3 rounded-xl text-sm disabled:opacity-40">
+                {aiLoading ? (isEn ? 'Thinking...' : 'AI 思考中...') : (isEn ? 'Generate →' : '生成題目 →')}
+              </button>
+              {aiSuggestions.length > 0 && (
+                <div className="space-y-2">
+                  {aiSuggestions.map((s, i) => (
+                    <button key={i} onClick={() => applyAiSuggestion(s)}
+                      className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/8 rounded-xl p-3 transition-colors">
+                      <p className="text-white text-sm font-medium mb-1">{s.question}</p>
+                      <p className="text-gray-500 text-xs">{s.optionA} / {s.optionB}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Templates */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-600">{isEn ? '🔥 Popular templates' : '🔥 熱門問法'}</p>
+              <button type="button" onClick={() => setShowAi(true)}
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
+                ✦ {isEn ? 'AI suggest' : 'AI 幫我想'}
+              </button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {TEMPLATES.map((tpl, i) => (
+                <button key={i} type="button" onClick={() => applyTemplate(tpl)}
+                  className="shrink-0 px-3 py-1.5 rounded-full text-xs border border-white/10 text-gray-400 hover:border-violet-500/40 hover:text-violet-400 transition-all whitespace-nowrap">
+                  {tpl.q}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="card p-5">
             <label className="block text-sm font-medium text-gray-400 mb-2">
               {t('ask.qLabel')} <span className="text-red-400">*</span>

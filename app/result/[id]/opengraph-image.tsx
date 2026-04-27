@@ -20,6 +20,11 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
   if (!q) return new Response('Not found', { status: 404 })
 
   const { total, pctA, pctB } = calcStats(votes ?? [])
+  const showStats = total >= 5
+  const isHot = total > 50
+
+  const pillText = isHot ? '🔥 熱門投票 · 大家都在選' : showStats ? '👥 大家覺得呢？' : '👇 快幫我選！'
+  const ctaText = showStats ? '你也來投票！' : '快幫我選，做不了決定？'
 
   return new ImageResponse(
     <div
@@ -32,14 +37,12 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
         position: 'relative',
       }}
     >
-      {/* Purple glow top-left */}
       <div style={{
         position: 'absolute', top: -100, left: -100,
         width: 600, height: 600,
         background: 'radial-gradient(circle, rgba(100,40,220,0.5) 0%, transparent 70%)',
         borderRadius: '50%',
       }} />
-      {/* Red glow bottom-right */}
       <div style={{
         position: 'absolute', bottom: -100, right: -100,
         width: 500, height: 500,
@@ -50,17 +53,17 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
       {/* Pill */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        background: 'rgba(255,255,255,0.09)',
-        border: '1.5px solid rgba(255,255,255,0.2)',
+        background: isHot ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.09)',
+        border: `1.5px solid ${isHot ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.2)'}`,
         borderRadius: 40, padding: '10px 28px',
         marginBottom: 32,
       }}>
-        <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 24 }}>👥 大家覺得呢？</span>
+        <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 24 }}>{pillText}</span>
       </div>
 
       {/* Question */}
       <div style={{
-        fontSize: 64, fontWeight: 800,
+        fontSize: q.question_text.length > 30 ? 52 : 64, fontWeight: 800,
         background: 'linear-gradient(90deg, #8B5CF6, #EC4899, #F97316)',
         backgroundClip: 'text',
         color: 'transparent',
@@ -89,15 +92,17 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
               <span style={{ color: winner ? '#fff' : '#6B7280', fontSize: 30, fontWeight: winner ? 700 : 400 }}>{label}</span>
               <span style={{
                 fontSize: 38, fontWeight: 800,
-                color: winner ? 'transparent' : '#4B5563',
-                background: winner ? 'linear-gradient(90deg, #EC4899, #F97316)' : 'none',
-                backgroundClip: winner ? 'text' : 'none',
-              }}>{pct}%</span>
+                color: showStats ? (winner ? 'transparent' : '#4B5563') : '#4B5563',
+                background: showStats && winner ? 'linear-gradient(90deg, #EC4899, #F97316)' : 'none',
+                backgroundClip: showStats && winner ? 'text' : 'none',
+              }}>
+                {showStats ? `${pct}%` : '?'}
+              </span>
             </div>
             <div style={{ height: 14, background: 'rgba(255,255,255,0.07)', borderRadius: 8, display: 'flex' }}>
               <div style={{
                 height: '100%', borderRadius: 8,
-                width: `${pct}%`,
+                width: showStats ? `${Math.max(pct, 3)}%` : '50%',
                 background: winner
                   ? 'linear-gradient(90deg, #7C3AED, #EC4899, #F97316)'
                   : 'rgba(255,255,255,0.15)',
@@ -106,17 +111,22 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
           </div>
         ))}
         <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 22, marginTop: 4 }}>
-          👥 總投票數：{total} 票
+          {showStats ? `👥 ${total} 票已投` : '⚡ 快來第一個投票！'}
         </span>
       </div>
 
-      {/* Footer */}
+      {/* CTA */}
+      <div style={{
+        marginTop: 36, fontSize: 28, fontWeight: 700, color: 'rgba(255,255,255,0.6)',
+      }}>
+        {ctaText} → votesnap.online
+      </div>
+
       <div style={{
         position: 'absolute', bottom: 40,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <span style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>votesnap</span>
-        <span style={{ fontSize: 26, fontWeight: 800, color: '#FED7AA' }}>.online</span>
+        <span style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>votesnap.online</span>
       </div>
     </div>,
     { ...size }
