@@ -172,48 +172,15 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
                   </span>
                 )}
               </div>
-              <div className="relative">
-                <button
-                  onClick={() => setShowReport(s => !s)}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${reported ? 'text-orange-400' : 'text-gray-600 hover:text-gray-400'}`}
-                  title={isEn ? 'Report' : '檢舉'}
-                >
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
-                  </svg>
-                </button>
-                {showReport && !reported && (
-                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-2xl p-4 shadow-xl w-56">
-                    <p className="text-xs font-medium text-white mb-3">{isEn ? 'Why are you reporting?' : '檢舉原因'}</p>
-                    <div className="space-y-1.5 mb-3">
-                      {(isEn
-                        ? ['Spam', 'Inappropriate content', 'Hate speech', 'Harassment', 'Other']
-                        : ['垃圾訊息', '不當內容', '仇恨言論', '騷擾霸凌', '其他']
-                      ).map(r => (
-                        <button key={r} onClick={() => setReportReason(r)}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors ${reportReason === r ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setShowReport(false); setReportReason('') }}
-                        className="flex-1 py-1.5 rounded-lg text-xs bg-white/5 text-gray-400 hover:bg-white/10">
-                        {isEn ? 'Cancel' : '取消'}
-                      </button>
-                      <button onClick={handleReport} disabled={!reportReason || reportSubmitting}
-                        className="flex-1 py-1.5 rounded-lg text-xs bg-orange-500/80 text-white hover:bg-orange-500 disabled:opacity-40 transition-colors">
-                        {reportSubmitting ? '...' : (isEn ? 'Submit' : '送出')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {reported && (
-                  <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl px-3 py-2 text-xs text-orange-400 w-32 shadow-xl text-center">
-                    {isEn ? 'Reported ✓' : '已檢舉 ✓'}
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => !reported && setShowReport(s => !s)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${reported ? 'text-orange-400' : 'text-gray-600 hover:text-gray-400'}`}
+                title={isEn ? 'Report' : '檢舉'}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+              </button>
             </div>
 
             <p className="text-white text-2xl font-semibold leading-snug mb-8 min-h-[60px]">
@@ -280,6 +247,41 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Report modal — rendered at root level to avoid overflow clipping */}
+      {showReport && !reported && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => { setShowReport(false); setReportReason('') }}>
+          <div className="w-full max-w-sm bg-[#1C1C1E] border border-white/10 rounded-3xl p-5 space-y-3"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-white">{isEn ? 'Why are you reporting?' : '選擇檢舉原因'}</p>
+              <button onClick={() => { setShowReport(false); setReportReason('') }} className="text-gray-500 hover:text-white text-xl leading-none">×</button>
+            </div>
+            <div className="space-y-2">
+              {(isEn
+                ? ['Spam', 'Inappropriate content', 'Hate speech', 'Harassment', 'Other']
+                : ['垃圾訊息', '不當內容', '仇恨言論', '騷擾霸凌', '其他']
+              ).map(r => (
+                <button key={r} onClick={() => setReportReason(r)}
+                  className={`w-full text-left px-4 py-3 rounded-2xl text-sm transition-colors ${reportReason === r ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => { setShowReport(false); setReportReason('') }}
+                className="flex-1 py-3 rounded-2xl text-sm bg-white/5 text-gray-400 hover:bg-white/10">
+                {isEn ? 'Cancel' : '取消'}
+              </button>
+              <button onClick={handleReport} disabled={!reportReason || reportSubmitting}
+                className="flex-1 py-3 rounded-2xl text-sm bg-orange-500/80 text-white hover:bg-orange-500 disabled:opacity-40 transition-colors font-medium">
+                {reportSubmitting ? '送出中...' : (isEn ? 'Submit' : '送出檢舉')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
