@@ -79,6 +79,9 @@ export default function AdminPage() {
   const [bankSaving, setBankSaving] = useState(false)
   const [bankDeleting, setBankDeleting] = useState<string | null>(null)
   const [bankPrioritizing, setBankPrioritizing] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
+  const [editSaving, setEditSaving] = useState(false)
   const [showBankForm, setShowBankForm] = useState(false)
   const [newQ, setNewQ] = useState({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
   const [autoStatus, setAutoStatus] = useState<{ nextFireAt: string; remaining: number; nextQuestions: BankQuestion[] } | null>(null)
@@ -264,6 +267,31 @@ export default function AdminPage() {
       showToast('已從題庫移除')
     } else {
       showToast('刪除失敗', 'error')
+    }
+  }
+
+  function startEdit(q: BankQuestion) {
+    setEditingId(q.id)
+    setEditForm({ question_text: q.question_text, option_a: q.option_a, option_b: q.option_b, category: q.category, duration_minutes: q.duration_minutes })
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    setEditSaving(true)
+    const res = await fetch('/api/admin/question-bank/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingId, ...editForm }),
+    })
+    setEditSaving(false)
+    if (res.ok) {
+      const updated = await res.json()
+      setBankQuestions(prev => prev.map(q => q.id === editingId ? { ...q, ...updated } : q))
+      setEditingId(null)
+      showToast('✓ 已儲存')
+    } else {
+      const d = await res.json().catch(() => ({}))
+      showToast(d.error ?? '儲存失敗', 'error')
     }
   }
 
@@ -786,46 +814,108 @@ export default function AdminPage() {
               <div className="space-y-2">
                 {bankQuestions.map(q => (
                   <div key={q.id} className={`card p-4 transition-all ${q.is_priority ? 'border-amber-500/30 bg-amber-500/5' : ''}`}>
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
+                    {editingId === q.id ? (
+                      /* Edit mode */
+                      <div className="space-y-2.5">
+                        <textarea
+                          value={editForm.question_text}
+                          onChange={e => setEditForm(f => ({ ...f, question_text: e.target.value }))}
+                          rows={2}
+                          className="w-full bg-[#1e1e1e] border border-violet-500/40 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none resize-none"
+                          placeholder="問題內容"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            value={editForm.option_a}
+                            onChange={e => setEditForm(f => ({ ...f, option_a: e.target.value }))}
+                            className="bg-[#1e1e1e] border border-white/15 rounded-xl px-3 py-2 text-white text-sm focus:outline-none"
+                            placeholder="選項 A"
+                          />
+                          <input
+                            value={editForm.option_b}
+                            onChange={e => setEditForm(f => ({ ...f, option_b: e.target.value }))}
+                            className="bg-[#1e1e1e] border border-white/15 rounded-xl px-3 py-2 text-white text-sm focus:outline-none"
+                            placeholder="選項 B"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={editForm.category}
+                            onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                            className="bg-[#1e1e1e] border border-white/15 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none"
+                          >
+                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <select
+                            value={editForm.duration_minutes}
+                            onChange={e => setEditForm(f => ({ ...f, duration_minutes: Number(e.target.value) }))}
+                            className="bg-[#1e1e1e] border border-white/15 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none"
+                          >
+                            <option value={720}>12 小時</option>
+                            <option value={1440}>1 天</option>
+                            <option value={2880}>2 天</option>
+                            <option value={4320}>3 天</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={() => setEditingId(null)}
+                            className="flex-1 py-2 rounded-xl text-sm border border-white/10 text-gray-400 hover:bg-white/5 transition-colors">
+                            取消
+                          </button>
+                          <button onClick={saveEdit} disabled={editSaving}
+                            className="flex-1 py-2 rounded-xl text-sm gradient-bg text-white font-medium disabled:opacity-50 transition-all">
+                            {editSaving ? '儲存中...' : '✓ 儲存'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* View mode */
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
                           {q.is_priority && (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-400 border border-amber-500/25 font-medium">⚡ 優先</span>
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-400 border border-amber-500/25 font-medium mb-1.5">⚡ 優先</span>
                           )}
+                          <p className="text-white text-sm font-medium leading-snug mb-2">{q.question_text}</p>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 text-xs font-medium">A: {q.option_a}</span>
+                            <span className="px-2.5 py-1 rounded-lg bg-white/8 text-gray-300 text-xs font-medium">B: {q.option_b}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500">{q.category}</span>
+                            <span>·</span>
+                            <span>{q.duration_minutes >= 1440 ? `${q.duration_minutes / 1440} 天` : `${q.duration_minutes / 60} 小時`}</span>
+                          </div>
                         </div>
-                        <p className="text-white text-sm font-medium leading-snug mb-2">{q.question_text}</p>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 text-xs font-medium">A: {q.option_a}</span>
-                          <span className="px-2.5 py-1 rounded-lg bg-white/8 text-gray-300 text-xs font-medium">B: {q.option_b}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500">{q.category}</span>
-                          <span>·</span>
-                          <span>{q.duration_minutes >= 1440 ? `${q.duration_minutes / 1440} 天` : `${q.duration_minutes / 60} 小時`}</span>
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <button
+                            onClick={() => startEdit(q)}
+                            className="w-8 h-8 rounded-xl bg-white/8 text-gray-400 hover:bg-violet-500/20 hover:text-violet-400 transition-colors flex items-center justify-center text-sm"
+                            title="編輯"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => togglePriority(q.id, q.is_priority)}
+                            disabled={bankPrioritizing === q.id}
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors disabled:opacity-40 ${
+                              q.is_priority
+                                ? 'bg-amber-500/30 text-amber-400 hover:bg-amber-500/50'
+                                : 'bg-white/8 text-gray-500 hover:bg-amber-500/20 hover:text-amber-400'
+                            }`}
+                            title={q.is_priority ? '取消優先' : '設為優先發文'}
+                          >
+                            {bankPrioritizing === q.id ? '·' : '⚡'}
+                          </button>
+                          <button
+                            onClick={() => deleteBankQuestion(q.id)}
+                            disabled={bankDeleting === q.id}
+                            className="w-8 h-8 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors flex items-center justify-center text-sm disabled:opacity-40"
+                          >
+                            {bankDeleting === q.id ? '·' : '🗑'}
+                          </button>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1.5 shrink-0">
-                        <button
-                          onClick={() => togglePriority(q.id, q.is_priority)}
-                          disabled={bankPrioritizing === q.id}
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors disabled:opacity-40 ${
-                            q.is_priority
-                              ? 'bg-amber-500/30 text-amber-400 hover:bg-amber-500/50'
-                              : 'bg-white/8 text-gray-500 hover:bg-amber-500/20 hover:text-amber-400'
-                          }`}
-                          title={q.is_priority ? '取消優先' : '設為優先發文'}
-                        >
-                          {bankPrioritizing === q.id ? '·' : '⚡'}
-                        </button>
-                        <button
-                          onClick={() => deleteBankQuestion(q.id)}
-                          disabled={bankDeleting === q.id}
-                          className="w-8 h-8 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors flex items-center justify-center text-sm disabled:opacity-40"
-                        >
-                          {bankDeleting === q.id ? '·' : '🗑'}
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
