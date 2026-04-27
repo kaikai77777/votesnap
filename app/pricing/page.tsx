@@ -42,7 +42,7 @@ export default function PricingPage() {
 
   const PRO_FEATURES = isEn
     ? [
-        '30 questions/day (free: 5)',
+        'Unlimited questions (free: 5/day)',
         'Demographic breakdown (age & gender)',
         'AI result insights (auto-generated)',
         'Long-term polls: 3/7/30 days',
@@ -50,7 +50,7 @@ export default function PricingPage() {
         'Priority feed exposure + Pro badge',
       ]
     : [
-        '每日 30 個問題（免費版 5 題）',
+        '無限發問（免費版每日 5 題）',
         '投票者人口統計（年齡、性別分析）',
         'AI 結果洞察（每題自動生成）',
         '長期投票時效（3天 / 7天 / 30天）',
