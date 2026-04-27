@@ -18,13 +18,13 @@ interface RankedQuestion extends Question {
 }
 
 const MEDAL = ['🥇', '🥈', '🥉']
-const MIN_VOTES: Record<Period, number> = { today: 5, week: 10, all: 30 }
+const MIN_VOTES: Record<Period, number> = { today: 3, week: 5, all: 10 }
 
 export default function TrendingPage() {
   const { t } = useLang()
   const isEn = t('nav.vote') === 'Vote'
 
-  const [period, setPeriod] = useState<Period>('today')
+  const [period, setPeriod] = useState<Period>('week')
   const [questions, setQuestions] = useState<RankedQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState<string | null>(null)
@@ -50,7 +50,7 @@ export default function TrendingPage() {
 
       if (period === 'today') {
         const d = new Date(now)
-        d.setHours(0, 0, 0, 0)
+        d.setTime(d.getTime() - 24 * 60 * 60 * 1000) // past 24 hours
         rangeStart = d.toISOString()
       } else if (period === 'week') {
         const d = new Date(now)
