@@ -35,8 +35,11 @@ const TEMPLATES_EN = [
 
 function durationLabel(m: number, isEn: boolean): string {
   if (m < 60) return isEn ? `${m} min` : `${m} 分鐘`
-  if (m < 1440) return isEn ? `${m / 60} hr` : `${m / 60} 小時`
-  const d = m / 1440
+  if (m < 1440) {
+    const h = Math.round(m / 60)
+    return isEn ? `${h} hr` : `${h} 小時`
+  }
+  const d = Math.round(m / 1440 * 10) / 10
   return isEn ? `${d}d` : `${d} 天`
 }
 
@@ -50,8 +53,7 @@ export default function AskPage() {
   const [options, setOptions] = useState(['Yes', 'No'])
   const [category, setCategory] = useState('')
   const [duration, setDuration] = useState(1440)
-  const [customVal, setCustomVal] = useState(1)
-  const [customUnit, setCustomUnit] = useState<'min' | 'hr' | 'day'>('day')
+  const [sliderVal, setSliderVal] = useState(50)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -342,44 +344,29 @@ export default function AskPage() {
               </div>
 
               {isPro ? (
-                <div className="mt-3">
-                  <p className="text-xs text-violet-400 mb-2">✦ {isEn ? 'Custom duration (Pro)' : '自訂時效（Pro）'}</p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={customVal}
-                      onChange={e => {
-                        const v = Math.max(1, Number(e.target.value))
-                        setCustomVal(v)
-                        const toMin = customUnit === 'min' ? v : customUnit === 'hr' ? v * 60 : v * 1440
-                        const clamped = Math.min(PRO_MAX, Math.max(PRO_MIN, toMin))
-                        setDuration(clamped)
-                      }}
-                      className="w-24 bg-[#1E1E1E] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm text-center focus:outline-none focus:border-violet-500/50"
-                    />
-                    <select
-                      value={customUnit}
-                      onChange={e => {
-                        const u = e.target.value as 'min' | 'hr' | 'day'
-                        setCustomUnit(u)
-                        const toMin = u === 'min' ? customVal : u === 'hr' ? customVal * 60 : customVal * 1440
-                        const clamped = Math.min(PRO_MAX, Math.max(PRO_MIN, toMin))
-                        setDuration(clamped)
-                      }}
-                      className="flex-1 bg-[#1E1E1E] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500/50"
-                    >
-                      <option value="min">{isEn ? 'min' : '分鐘'}</option>
-                      <option value="hr">{isEn ? 'hr' : '小時'}</option>
-                      <option value="day">{isEn ? 'day' : '天'}</option>
-                    </select>
-                    <span className="text-xs text-gray-600 shrink-0">
-                      → {durationLabel(Math.min(PRO_MAX, Math.max(PRO_MIN, duration)), isEn)}
-                    </span>
+                <div className="mt-3 px-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-violet-400">✦ {isEn ? 'Custom (Pro)' : '自訂時效（Pro）'}</p>
+                    <p className="text-sm font-semibold text-white">{durationLabel(duration, isEn)}</p>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1.5">
-                    {isEn ? `Range: 5 min – 7 days` : `範圍：5 分鐘 ～ 7 天`}
-                  </p>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={sliderVal}
+                    onChange={e => {
+                      const s = Number(e.target.value)
+                      setSliderVal(s)
+                      // Logarithmic scale: 5 min → 10080 min
+                      const mins = Math.round(PRO_MIN * Math.pow(PRO_MAX / PRO_MIN, s / 100))
+                      setDuration(Math.min(PRO_MAX, Math.max(PRO_MIN, mins)))
+                    }}
+                    className="w-full accent-violet-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-600 mt-1">
+                    <span>{isEn ? '5 min' : '5 分鐘'}</span>
+                    <span>{isEn ? '7 days' : '7 天'}</span>
+                  </div>
                 </div>
               ) : (
                 <button type="button" onClick={() => router.push('/pricing')}

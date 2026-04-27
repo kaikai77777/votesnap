@@ -217,9 +217,15 @@ export function isExpired(expiresAt: string) {
   return new Date(expiresAt) < new Date()
 }
 
-export function formatCountdown(expiresAt: string): string {
+export function formatCountdown(expiresAt: string, isEn = false): string {
   const diff = Math.max(0, new Date(expiresAt).getTime() - Date.now())
-  const minutes = Math.floor(diff / 60000)
-  const seconds = Math.floor((diff % 60000) / 1000)
+  const totalSec = Math.floor(diff / 1000)
+  const days = Math.floor(totalSec / 86400)
+  const hours = Math.floor((totalSec % 86400) / 3600)
+  const minutes = Math.floor((totalSec % 3600) / 60)
+  const seconds = totalSec % 60
+
+  if (days >= 1) return isEn ? `${days}d ${hours}h` : `${days} 天 ${hours} 小時`
+  if (hours >= 1) return isEn ? `${hours}h ${minutes}m` : `${hours} 小時 ${minutes} 分`
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }

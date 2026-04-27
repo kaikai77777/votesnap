@@ -19,7 +19,7 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   const { t } = useLang()
   const isEn = t('vote.loading') === 'Loading questions...'
   const [voting, setVoting] = useState<string | null>(null)
-  const [countdown, setCountdown] = useState(formatCountdown(question.expires_at))
+  const [countdown, setCountdown] = useState(formatCountdown(question.expires_at, isEn))
   const [imgIndex, setImgIndex] = useState(0)
   const [lightbox, setLightbox] = useState(false)
   const [reported, setReported] = useState(false)
@@ -41,7 +41,7 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   const isMulti = options.length > 2
 
   useEffect(() => {
-    const timer = setInterval(() => setCountdown(formatCountdown(question.expires_at)), 1000)
+    const timer = setInterval(() => setCountdown(formatCountdown(question.expires_at, isEn)), 1000)
     return () => clearInterval(timer)
   }, [question.expires_at])
 
