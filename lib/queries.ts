@@ -1,31 +1,44 @@
 import { createClient } from './supabase/client'
 import type { Profile } from '@/types'
 
-export async function getActiveQuestionsForVoting(userId: string) {
+export async function getActiveQuestionsForVoting(userId?: string | null, anonymousId?: string | null) {
   const supabase = createClient()
 
-  const { data: voted } = await supabase
-    .from('votes')
-    .select('question_id')
-    .eq('user_id', userId)
-
-  const votedIds = voted?.map((v) => v.question_id) ?? []
+  let votedIds: string[] = []
+  if (userId) {
+    const { data } = await supabase.from('votes').select('question_id').eq('user_id', userId)
+    votedIds = data?.map(v => v.question_id) ?? []
+  } else if (anonymousId) {
+    const { data } = await supabase.from('votes').select('question_id').eq('anonymous_id', anonymousId)
+    votedIds = data?.map(v => v.question_id) ?? []
+  }
 
   let query = supabase
     .from('questions')
     .select('*')
     .eq('status', 'active')
-    .neq('user_id', userId)
     .gt('expires_at', new Date().toISOString())
     .order('is_priority', { ascending: false })
     .order('expires_at', { ascending: true })
     .limit(20)
 
-  if (votedIds.length > 0) {
-    query = query.not('id', 'in', `(${votedIds.join(',')})`)
+  if (userId) query = query.neq('user_id', userId)
+  if (votedIds.length > 0) query = query.not('id', 'in', `(${votedIds.join(',')})`)
+
+  const { data: activeQs, error } = await query
+
+  // Phase 0.4: 不足 10 題時補熱門已結束題目
+  if (!error && activeQs && activeQs.length < 10) {
+    const excludeIds = [...votedIds, ...activeQs.map(q => q.id)]
+    let endedQuery = supabase
+      .from('questions').select('*').eq('status', 'ended')
+      .order('created_at', { ascending: false }).limit(10 - activeQs.length)
+    if (excludeIds.length > 0) endedQuery = endedQuery.not('id', 'in', `(${excludeIds.join(',')})`)
+    const { data: endedQs } = await endedQuery
+    return { data: [...(activeQs ?? []), ...(endedQs ?? [])], error: null }
   }
 
-  return query
+  return { data: activeQs ?? [], error }
 }
 
 export async function createQuestion(payload: {
@@ -80,11 +93,16 @@ export async function uploadQuestionImages(files: File[], questionId: string): P
   return urls
 }
 
-export async function castVote(questionId: string, userId: string, vote: 'A' | 'B') {
+export async function castVote(
+  questionId: string,
+  vote: 'A' | 'B',
+  userId?: string | null,
+  anonymousId?: string | null
+) {
   const supabase = createClient()
   return supabase
     .from('votes')
-    .insert({ question_id: questionId, user_id: userId, vote })
+    .insert({ question_id: questionId, user_id: userId ?? null, anonymous_id: anonymousId ?? null, vote })
     .select()
     .single()
 }

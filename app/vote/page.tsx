@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getActiveQuestionsForVoting, castVote, getProfile } from '@/lib/queries'
@@ -25,50 +24,74 @@ const DEMO_EN: DemoQuestion[] = [
   { id: 'demo-3', isDemo: true, user_id: '', question_text: 'Should I sleep now?', option_a: 'Sleep now', option_b: 'One more scroll', category: 'Life', duration_minutes: 10, status: 'active', expires_at: '', created_at: '', image_urls: null },
 ]
 
+function getAnonymousId(): string {
+  if (typeof window === 'undefined') return ''
+  let id = localStorage.getItem('votesnap_anon_id')
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('votesnap_anon_id', id) }
+  return id
+}
+
 export default function VotePage() {
-  const router = useRouter()
   const { t } = useLang()
   const isEn = t('vote.loading') === 'Loading questions...'
 
   const [userId, setUserId] = useState<string | null>(null)
+  const [anonymousId, setAnonymousId] = useState<string>('')
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [lastVote, setLastVote] = useState<'A' | 'B' | null>(null)
   const [showDemoEnd, setShowDemoEnd] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
+    const anonId = getAnonymousId()
+    setAnonymousId(anonId)
+
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return router.replace('/login')
-      setUserId(user.id)
+      const uid = user?.id ?? null
+      setUserId(uid)
 
-      // Show onboarding + demos only for truly new users (no interests set)
-      const { data: profile } = await getProfile(user.id)
-      const isNewUser = !profile?.interests || profile.interests.length === 0
-      if (isNewUser) setShowOnboarding(true)
+      let showDemos = false
+      if (uid) {
+        const { data: profile } = await getProfile(uid)
+        const isNewUser = !profile?.interests || profile.interests.length === 0
+        if (isNewUser) { setShowOnboarding(true); showDemos = true }
+      }
 
       const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
-      const { data, error } = await getActiveQuestionsForVoting(user.id)
+      const { data, error } = await getActiveQuestionsForVoting(uid, uid ? null : anonId)
       const real = (!error && data) ? data : []
 
-      setQuestions(isNewUser ? [...demos, ...real] : real)
+      setQuestions(showDemos ? [...demos, ...real] : real)
       setLoading(false)
     })
-  }, [router, isEn])
+  }, [isEn])
+
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2500)
+  }
 
   async function handleVote(vote: 'A' | 'B') {
-    if (!userId || !questions[index]) return
     const q = questions[index] as DemoQuestion
+    if (!q) return
 
     if (!q.isDemo) {
-      await castVote(q.id, userId, vote)
+      const { error } = await castVote(q.id, vote, userId, userId ? null : anonymousId)
+      if (error) {
+        if ((error as { code?: string }).code === '23505') {
+          showToast(isEn ? 'Already voted on this one!' : '你已經投過這題了！')
+        }
+        setIndex(i => i + 1)
+        return
+      }
     }
 
     setLastVote(vote)
 
-    // Check if next card transitions from demo → real
     const nextIndex = index + 1
     const nextQ = questions[nextIndex] as DemoQuestion | undefined
     const currentIsDemo = q.isDemo
@@ -88,6 +111,7 @@ export default function VotePage() {
   const current = questions[index]
   const done = !loading && (!questions.length || index >= questions.length)
   const isDemo = !!(current as DemoQuestion)?.isDemo
+  const isEnded = current?.status === 'ended'
   const demoCount = questions.filter(q => (q as DemoQuestion).isDemo).length
   const realTotal = questions.length - demoCount
 
@@ -97,6 +121,13 @@ export default function VotePage() {
       {showOnboarding && userId && (
         <OnboardingModal userId={userId} onDone={() => setShowOnboarding(false)} />
       )}
+
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-5 py-3 text-sm text-white shadow-xl animate-fade-in">
+          {toast}
+        </div>
+      )}
+
       <main className="pt-20 pb-12 px-4 max-w-lg mx-auto flex flex-col items-center">
         {loading && (
           <div className="flex flex-col items-center gap-3 mt-20 text-gray-500">
@@ -105,7 +136,6 @@ export default function VotePage() {
           </div>
         )}
 
-        {/* Demo → Real transition */}
         {showDemoEnd && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm">
             <div className="text-center animate-fade-in">
@@ -122,7 +152,13 @@ export default function VotePage() {
             <h2 className="text-2xl font-bold mb-2">{t('vote.allDone')}</h2>
             <p className="text-gray-400 text-sm mb-8">{t('vote.allDoneSub')}</p>
             <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
-              <Link href="/ask" className="btn-gradient py-3.5 rounded-2xl text-center text-base">{t('vote.askSomething')}</Link>
+              {userId ? (
+                <Link href="/ask" className="btn-gradient py-3.5 rounded-2xl text-center text-base">{t('vote.askSomething')}</Link>
+              ) : (
+                <Link href="/login" className="btn-gradient py-3.5 rounded-2xl text-center text-base">
+                  {isEn ? 'Login to ask questions' : '登入後發問'}
+                </Link>
+              )}
               <Link href="/trending" className="py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-base hover:bg-white/5 transition-colors">
                 {isEn ? '🔥 Check Hot Questions' : '🔥 看熱門排行榜'}
               </Link>
@@ -138,11 +174,14 @@ export default function VotePage() {
 
         {!loading && !done && current && !showDemoEnd && (
           <div className="w-full mt-4">
-            {/* Demo badge */}
-            {isDemo && (
+            {(isDemo || isEnded) && (
               <div className="flex items-center justify-center mb-3">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20">
-                  {isEn ? '✦ Try it out' : '✦ 先來試試看'}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                  isEnded
+                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                    : 'bg-violet-500/15 text-violet-400 border-violet-500/20'
+                }`}>
+                  {isEnded ? '🔥 熱門回顧' : (isEn ? '✦ Try it out' : '✦ 先來試試看')}
                 </span>
               </div>
             )}
@@ -161,7 +200,15 @@ export default function VotePage() {
               total={isDemo ? demoCount : realTotal}
             />
 
-            {!isDemo && (
+            {!isDemo && !userId && (
+              <div className="mt-6 text-center">
+                <Link href="/login" className="text-violet-400 text-sm hover:underline">
+                  {isEn ? 'Login to ask your own questions →' : '登入後可以自己發問 →'}
+                </Link>
+              </div>
+            )}
+
+            {!isDemo && userId && (
               <p className="text-center text-gray-600 text-xs mt-6">
                 {t('vote.tip')}{' '}
                 <Link href="/my-questions" className="text-gray-400 underline underline-offset-2">{t('nav.myQ')}</Link>{' '}

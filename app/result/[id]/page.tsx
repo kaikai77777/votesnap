@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useCallback } from 'react'
-import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile, getDemographicStats } from '@/lib/queries'
@@ -24,7 +24,6 @@ function getEmotionalCopy(pctA: number, total: number): string {
 function ResultContent() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { t } = useLang()
   const isEn = t('result.live') === 'Live'
 
@@ -55,8 +54,8 @@ function ResultContent() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return router.replace('/login')
       fetchData()
+      if (!user) return
       setCurrentUserId(user.id)
       const { data: profile } = await getProfile(user.id)
       if (profile?.display_name) setDisplayName(profile.display_name)
@@ -65,7 +64,7 @@ function ResultContent() {
         getDemographicStats(id).then(setDemographics)
       }
     })
-  }, [router, fetchData])
+  }, [fetchData])
 
   useEffect(() => {
     if (!question || isExpired(question.expires_at)) return

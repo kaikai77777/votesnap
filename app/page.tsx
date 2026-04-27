@@ -101,17 +101,17 @@ export default function LandingPage() {
 
       {/* Live stats */}
       <section className="py-10 px-6">
-        <div className="max-w-2xl mx-auto grid grid-cols-3 gap-4">
-          {[
-            { value: stats.todayQs.toLocaleString(), label: t('land.stat1') },
-            { value: stats.totalVotes.toLocaleString(), label: t('land.stat2') },
-            { value: '~15 min', label: t('land.stat3') },
-          ].map(({ value, label }) => (
-            <div key={label} className="card p-5 text-center">
-              <p className="text-2xl font-bold gradient-text mb-1">{value}</p>
-              <p className="text-xs text-gray-500">{label}</p>
+        <div className="max-w-2xl mx-auto flex justify-center gap-4">
+          <div className="card p-5 text-center min-w-[120px]">
+            <p className="text-2xl font-bold gradient-text mb-1">{stats.todayQs.toLocaleString()}</p>
+            <p className="text-xs text-gray-500">{t('land.stat1')}</p>
+          </div>
+          {stats.totalVotes >= 1000 && (
+            <div className="card p-5 text-center min-w-[120px]">
+              <p className="text-2xl font-bold gradient-text mb-1">{stats.totalVotes.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">{t('land.stat2')}</p>
             </div>
-          ))}
+          )}
         </div>
       </section>
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { isExpired } from '@/lib/queries'
@@ -20,8 +19,9 @@ interface RankedQuestion extends Question {
 
 const MEDAL = ['🥇', '🥈', '🥉']
 
+const MIN_VOTES: Record<Period, number> = { today: 5, week: 10, all: 30 }
+
 export default function TrendingPage() {
-  const router = useRouter()
   const { t } = useLang()
   const isEn = t('nav.vote') === 'Vote'
 
@@ -29,12 +29,6 @@ export default function TrendingPage() {
   const [questions, setQuestions] = useState<RankedQuestion[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.replace('/login')
-    })
-  }, [router])
 
   useEffect(() => {
     async function load() {
@@ -89,6 +83,7 @@ export default function TrendingPage() {
             pctB: total > 0 ? Math.round((b / total) * 100) : 0,
           }
         })
+        .filter(q => q.voteCount >= MIN_VOTES[period])
         .sort((a, b) => b.voteCount - a.voteCount)
 
       setQuestions(ranked)
