@@ -26,6 +26,7 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   const [showReport, setShowReport] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportSuccess, setReportSuccess] = useState(false)
 
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -68,6 +69,8 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
       setReported(true)
       setShowReport(false)
       setReportReason('')
+      setReportSuccess(true)
+      setTimeout(() => setReportSuccess(false), 2500)
     } else {
       const d = await res.json().catch(() => ({}))
       alert(d.error ?? '檢舉失敗，請再試一次')
@@ -253,6 +256,21 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Report success toast */}
+      {reportSuccess && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1C1C1E] border border-orange-500/30 rounded-2xl px-5 py-3.5 shadow-xl animate-fade-in">
+          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-white text-sm font-medium">{isEn ? 'Report submitted' : '已成功送出檢舉'}</p>
+            <p className="text-gray-500 text-xs">{isEn ? 'Our team will review it.' : '我們會盡快審核，謝謝回報'}</p>
+          </div>
         </div>
       )}
 
