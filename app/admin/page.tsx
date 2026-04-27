@@ -79,6 +79,8 @@ export default function AdminPage() {
   const [bankDeleting, setBankDeleting] = useState<string | null>(null)
   const [showBankForm, setShowBankForm] = useState(false)
   const [newQ, setNewQ] = useState({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
+  const [autoStatus, setAutoStatus] = useState<{ nextFireAt: string; remaining: number; nextQuestions: BankQuestion[] } | null>(null)
+  const [countdown, setCountdown] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -94,6 +96,32 @@ export default function AdminPage() {
       if (!d.error) setStats(d)
     })
   }, [authed])
+
+  useEffect(() => {
+    if (!autoStatus?.nextFireAt) return
+    const update = () => {
+      const diff = new Date(autoStatus.nextFireAt).getTime() - Date.now()
+      if (diff <= 0) { setCountdown('即將發文...'); return }
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setCountdown(`${h > 0 ? `${h} 小時 ` : ''}${m} 分 ${s} 秒`)
+    }
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [autoStatus?.nextFireAt])
+
+  const loadBank = useCallback(async () => {
+    setBankLoading(true)
+    const [bankData, statusData] = await Promise.all([
+      fetch('/api/admin/question-bank').then(r => r.json()),
+      fetch('/api/admin/auto-post-status').then(r => r.json()),
+    ])
+    setBankQuestions(Array.isArray(bankData) ? bankData : [])
+    if (!statusData.error) setAutoStatus(statusData)
+    setBankLoading(false)
+  }, [])
 
   const loadReports = useCallback(async () => {
     setLoading(true)
@@ -199,13 +227,6 @@ export default function AdminPage() {
       showToast(`批量刪除失敗: ${d.error ?? res.status}`, 'error')
     }
   }
-
-  const loadBank = useCallback(async () => {
-    setBankLoading(true)
-    const data = await fetch('/api/admin/question-bank').then(r => r.json())
-    setBankQuestions(Array.isArray(data) ? data : [])
-    setBankLoading(false)
-  }, [])
 
   async function addBankQuestion() {
     if (!newQ.question_text.trim() || !newQ.option_a.trim() || !newQ.option_b.trim()) return
@@ -612,6 +633,34 @@ export default function AdminPage() {
         {/* Question Bank */}
         {tab === 'bank' && (
           <div>
+            {/* Next auto-post status */}
+            {autoStatus && (
+              <div className="rounded-2xl border border-violet-500/25 bg-violet-500/8 p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                  <p className="text-xs font-semibold text-violet-300">下次自動發文</p>
+                  <span className="ml-auto text-xs text-gray-500">題庫剩 {autoStatus.remaining} 題可用</span>
+                </div>
+                <p className="text-2xl font-bold text-white tabular-nums mb-3">{countdown || '計算中...'}</p>
+                {autoStatus.nextQuestions.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 mb-1.5">下一批將發：</p>
+                    {autoStatus.nextQuestions.map((q, i) => (
+                      <div key={q.id} className="flex items-start gap-2.5 bg-white/5 rounded-xl px-3 py-2.5">
+                        <span className="text-xs text-violet-400 font-bold shrink-0 mt-0.5">#{i + 1}</span>
+                        <div className="min-w-0">
+                          <p className="text-white text-xs font-medium leading-snug">{q.question_text}</p>
+                          <p className="text-gray-500 text-xs mt-0.5">A: {q.option_a} / B: {q.option_b}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-red-400">⚠️ 題庫已用完，請新增更多題目</p>
+                )}
+              </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div>

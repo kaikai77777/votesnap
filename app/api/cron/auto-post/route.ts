@@ -38,9 +38,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, posted: 0, note: 'All questions have been posted — add more to the bank' })
   }
 
-  // Pick randomly
-  const shuffled = [...available].sort(() => Math.random() - 0.5)
-  const picks = shuffled.slice(0, Math.min(QUESTIONS_PER_RUN, available.length))
+  // Pick in order (FIFO — oldest bank questions first, so next batch is predictable)
+  available.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  const picks = available.slice(0, Math.min(QUESTIONS_PER_RUN, available.length))
 
   const now = Date.now()
   const rows = picks.map((q, i) => ({
