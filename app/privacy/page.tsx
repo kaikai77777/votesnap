@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   const sections = isEn ? [
     {
       title: '1. Information We Collect',
-      body: 'We collect the following information when you use VoteSnap:\n• Account info: email address and display name (when you sign up)\n• Content: poll questions and options you create\n• Usage data: votes cast, questions viewed, and interactions with the platform\n• Device info: browser type, language preference, and anonymous session identifiers\n• Payment info: processed securely by Stripe — we never see or store your card details',
+      body: 'We collect the following information when you use VoteSnap:\n• Account info: email address and display name (when you sign up)\n• Content: poll questions and options you create\n• Usage data: votes cast, questions viewed, and interactions with the platform\n• Device info: browser type, language preference, and anonymous session identifiers\n• Payment info: processed securely by Paddle — we never see or store your card details',
     },
     {
       title: '2. How We Use Your Information',
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
     },
     {
       title: '4. Third-Party Services',
-      body: 'We use the following third-party services:\n• Supabase — database and authentication\n• Stripe — payment processing\n• Netlify — hosting and deployment\n• Anthropic Claude API — AI-generated suggestions\n\nEach service has its own privacy policy and security standards.',
+      body: 'We use the following third-party services:\n• Supabase — database and authentication\n• Vercel — hosting and deployment\n• Claude / Anthropic — AI-generated suggestions\n• Paddle — payment processing\n\nEach service has its own privacy policy and security standards.',
     },
     {
       title: '5. Cookies & Local Storage',
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
   ] : [
     {
       title: '1. 我們收集的資訊',
-      body: '當您使用 VoteSnap 時，我們收集以下資訊：\n• 帳號資訊：電子郵件與顯示名稱（註冊時）\n• 內容：您建立的投票問題與選項\n• 使用資料：投票紀錄、瀏覽的問題及平台互動\n• 裝置資訊：瀏覽器類型、語言偏好及匿名工作階段識別碼\n• 付款資訊：由 Stripe 安全處理——我們從不查看或儲存您的卡片資訊',
+      body: '當您使用 VoteSnap 時，我們收集以下資訊：\n• 帳號資訊：電子郵件與顯示名稱（註冊時）\n• 內容：您建立的投票問題與選項\n• 使用資料：投票紀錄、瀏覽的問題及平台互動\n• 裝置資訊：瀏覽器類型、語言偏好及匿名工作階段識別碼\n• 付款資訊：由 Paddle 安全處理——我們從不查看或儲存您的卡片資訊',
     },
     {
       title: '2. 我們如何使用您的資訊',
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
     },
     {
       title: '4. 第三方服務',
-      body: '我們使用以下第三方服務：\n• Supabase — 資料庫與身份驗證\n• Stripe — 付款處理\n• Netlify — 主機與部署\n• Anthropic Claude API — AI 建議功能\n\n各服務均有其隱私政策與安全標準。',
+      body: '我們使用以下第三方服務：\n• Supabase — 資料庫與身份驗證\n• Vercel — 主機與部署\n• Claude / Anthropic — AI 建議功能\n• Paddle — 付款處理\n\n各服務均有其隱私政策與安全標準。',
     },
     {
       title: '5. Cookie 與本機儲存',

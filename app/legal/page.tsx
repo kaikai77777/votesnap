@@ -76,10 +76,10 @@ export default function LegalPage() {
 
   // ── PRIVACY ────────────────────────────────────────────────────────────────
   const privacy = isEn ? [
-    { t: '1. Information We Collect', b: 'Email, display name, poll content, usage data, device info, and anonymous session IDs. Payments processed by Stripe — we never see card details.' },
+    { t: '1. Information We Collect', b: 'Email, display name, poll content, usage data, device info, and anonymous session IDs. Payments processed by Paddle — we never see card details.' },
     { t: '2. How We Use It', b: 'To provide the Service, prevent abuse, send transactional emails, analyze usage, and process Pro purchases.' },
     { t: '3. Anonymity of Votes', b: 'Votes are anonymous. Owners see only percentages. Anonymous votes link only to a local session ID on your device.' },
-    { t: '4. Third Parties', b: 'Supabase (database & auth), Stripe (payments), Netlify (hosting), Anthropic (AI suggestions). Each has its own privacy policy.' },
+    { t: '4. Third Parties', b: 'Supabase (database & auth), Vercel (hosting), Claude / Anthropic (AI suggestions), Paddle (payments). Each has its own privacy policy.' },
     { t: '5. Cookies & Storage', b: 'We use cookies for auth sessions and local storage for anonymous vote tracking. No third-party ad cookies.' },
     { t: '6. Data Retention', b: 'Questions and results are stored indefinitely. Account data retained until deletion is requested.' },
     { t: '7. Your Rights', b: 'You may access, correct, or delete your data at any time. Email votesnap.online@gmail.com. We respond within 30 days.' },
@@ -87,10 +87,10 @@ export default function LegalPage() {
     { t: '9. Children', b: 'Not directed at children under 13. Contact us immediately if you believe a child has submitted personal data.' },
     { t: '10. Contact', b: 'votesnap.online@gmail.com' },
   ] : [
-    { t: '1. 收集的資訊', b: '電子郵件、顯示名稱、投票內容、使用資料、裝置資訊及匿名工作階段 ID。付款由 Stripe 安全處理，我們從不查看卡片資訊。' },
+    { t: '1. 收集的資訊', b: '電子郵件、顯示名稱、投票內容、使用資料、裝置資訊及匿名工作階段 ID。付款由 Paddle 安全處理，我們從不查看卡片資訊。' },
     { t: '2. 用途', b: '提供服務、防止濫用、發送交易性電子郵件、分析使用模式、處理 Pro 購買。' },
     { t: '3. 投票匿名性', b: '投票完全匿名，發問者只能看到百分比。匿名投票僅與裝置本機的工作階段 ID 連結。' },
-    { t: '4. 第三方', b: 'Supabase（資料庫與驗證）、Stripe（付款）、Netlify（主機）、Anthropic（AI 建議）。各服務均有其隱私政策。' },
+    { t: '4. 第三方', b: 'Supabase（資料庫與驗證）、Vercel（主機）、Claude / Anthropic（AI 建議）、Paddle（付款）。各服務均有其隱私政策。' },
     { t: '5. Cookie 與儲存', b: '使用 Cookie 進行身份驗證，本機儲存用於匿名投票追蹤。不使用第三方廣告 Cookie。' },
     { t: '6. 資料保留', b: '問題與結果無限期保存。帳號資料保留至申請刪除為止。' },
     { t: '7. 您的權利', b: '您可隨時存取、更正或刪除個人資料。請寄信至 votesnap.online@gmail.com，我們將於 30 天內回覆。' },
@@ -194,8 +194,8 @@ export default function LegalPage() {
               <p className="text-white text-sm font-semibold mb-3">{isEn ? 'How to Request' : '如何申請'}</p>
               <ol className="space-y-2 text-sm text-gray-400">
                 {(isEn
-                  ? ['Email votesnap.online@gmail.com within 14 days of purchase', 'Include your order ID (from Stripe confirmation email)', 'Refund processed within 5–7 business days']
-                  : ['購買後 14 天內寄信至 votesnap.online@gmail.com', '附上訂單編號（可在 Stripe 確認信中找到）', '我們將於 5–7 個工作日內處理退款']
+                  ? ['Email votesnap.online@gmail.com within 14 days of purchase', 'Include your order ID (found in your Paddle confirmation email)', 'Refund processed within 5–7 business days']
+                  : ['購買後 14 天內寄信至 votesnap.online@gmail.com', '附上訂單編號（可在 Paddle 確認信中找到）', '我們將於 5–7 個工作日內處理退款']
                 ).map((step, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-white/6 flex items-center justify-center text-[11px] text-gray-500 shrink-0 mt-0.5">{i + 1}</span>
@@ -208,11 +208,11 @@ export default function LegalPage() {
               <p className="text-white text-sm font-semibold mb-2">✦ {isEn ? 'Summary' : '摘要'}</p>
               <div className="space-y-1.5 text-sm text-gray-400">
                 {(isEn
-                  ? ['14-day no-questions-asked refund', 'Refunded to original payment method', 'Pro access active for lifetime of account', 'No refunds after 14 days']
-                  : ['14 天無條件退款', '退回原付款方式', 'Pro 功能帳號永久有效', '14 天後不受理退款']
+                  ? ['14-day no-questions-asked refund', 'Refunded to original payment method', 'Pro access active for lifetime of account']
+                  : ['14 天無條件退款', '退回原付款方式', 'Pro 功能帳號永久有效']
                 ).map((item, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className={i < 3 ? 'text-green-400' : 'text-gray-600'}>{i < 3 ? '✓' : '·'}</span>
+                    <span className="text-green-400">✓</span>
                     {item}
                   </div>
                 ))}

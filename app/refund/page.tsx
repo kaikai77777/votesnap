@@ -61,8 +61,8 @@ export default function RefundPage() {
               <li className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/6 flex items-center justify-center text-[11px] text-gray-500 shrink-0 mt-0.5">2</span>
                 {isEn
-                  ? 'Include your order ID (found in your Stripe confirmation email)'
-                  : '附上訂單編號（可在 Stripe 確認信中找到）'}
+                  ? 'Include your order ID (found in your Paddle confirmation email)'
+                  : '附上訂單編號（可在 Paddle 確認信中找到）'}
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/6 flex items-center justify-center text-[11px] text-gray-500 shrink-0 mt-0.5">3</span>
@@ -93,10 +93,6 @@ export default function RefundPage() {
               <div className="flex items-center gap-2">
                 <span className="text-green-400">✓</span>
                 {isEn ? 'Pro access active for lifetime of account' : 'Pro 功能帳號永久有效'}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">·</span>
-                {isEn ? 'No refunds after 14 days' : '14 天後不受理退款'}
               </div>
             </div>
           </div>
