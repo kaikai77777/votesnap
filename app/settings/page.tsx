@@ -200,11 +200,27 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Rules link */}
-            <div className="text-center pt-2">
-              <Link href="/rules" className="text-gray-600 text-xs hover:text-gray-400 transition-colors underline underline-offset-2">
-                {isEn ? 'Community Rules' : '社群規範'}
-              </Link>
+            {/* About & Legal */}
+            <div className="card p-5">
+              <p className="text-xs text-gray-500 mb-3">{isEn ? 'About & Legal' : '關於與法律'}</p>
+              <div className="space-y-1">
+                {[
+                  { href: '/about', en: 'About VoteSnap', zh: '關於我們' },
+                  { href: '/rules', en: 'Community Rules', zh: '社群規範' },
+                  { href: '/terms', en: 'Terms of Service', zh: '服務條款' },
+                  { href: '/privacy', en: 'Privacy Policy', zh: '隱私政策' },
+                  { href: '/refund', en: 'Refund Policy', zh: '退款政策' },
+                ].map(({ href, en, zh }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center justify-between py-2.5 px-1 text-sm text-gray-400 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                  >
+                    <span>{isEn ? en : zh}</span>
+                    <span className="text-gray-600">›</span>
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Save */}

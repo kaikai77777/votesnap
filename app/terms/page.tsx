@@ -8,8 +8,8 @@ export default function TermsPage() {
   const { t } = useLang()
   const isEn = t('nav.vote') === 'Vote'
 
-  const updated = 'January 1, 2025'
-  const updatedZh = '2025 年 1 月 1 日'
+  const updated = 'August 5, 2025'
+  const updatedZh = '2025 年 8 月 5 日'
 
   const sections = isEn ? [
     {

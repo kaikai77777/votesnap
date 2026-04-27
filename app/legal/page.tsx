@@ -26,7 +26,7 @@ export default function LegalPage() {
         { key: 'refund',  label: '退款政策' },
       ]
 
-  const updated = isEn ? 'January 1, 2025' : '2025 年 1 月 1 日'
+  const updated = isEn ? 'August 5, 2025' : '2025 年 8 月 5 日'
 
   // ── ABOUT / FAQ ────────────────────────────────────────────────────────────
   const faqs = isEn ? [

@@ -56,6 +56,10 @@ export default function AdminPage() {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [deleteModal, setDeleteModal] = useState<{ id: string; text: string } | null>(null)
   const [deleteReason, setDeleteReason] = useState('inappropriate')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [batchModal, setBatchModal] = useState(false)
+  const [batchReason, setBatchReason] = useState('inappropriate')
+  const [batchLoading, setBatchLoading] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -138,6 +142,44 @@ export default function AdminPage() {
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() {
+    setSelectedIds(new Set(questions.map(q => q.id)))
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+  }
+
+  async function confirmBatchDelete() {
+    if (selectedIds.size === 0) return
+    setBatchLoading(true)
+    const res = await fetch('/api/admin/questions/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selectedIds), reason: batchReason }),
+    })
+    setBatchLoading(false)
+    setBatchModal(false)
+    if (res.ok) {
+      const d = await res.json()
+      showToast(`已批量刪除 ${d.count} 則問題`)
+      setSelectedIds(new Set())
+      loadQuestions()
+      setStats(s => s ? { ...s, totalQuestions: s.totalQuestions - (d.count ?? 0) } : s)
+    } else {
+      const d = await res.json().catch(() => ({}))
+      showToast(`批量刪除失敗: ${d.error ?? res.status}`, 'error')
+    }
+  }
+
   async function dismissReports(questionId: string) {
     setActionId(questionId + ':dismiss')
     const res = await fetch('/api/admin/reports/dismiss', {
@@ -206,6 +248,43 @@ export default function AdminPage() {
               <button onClick={confirmDelete}
                 className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 text-white hover:bg-red-600 transition-colors font-medium">
                 確認刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch delete modal */}
+      {batchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-white font-bold mb-1">批量刪除確認</h3>
+            <p className="text-gray-400 text-sm mb-4">即將刪除 <span className="text-red-400 font-bold">{selectedIds.size}</span> 則問題</p>
+            <p className="text-xs text-gray-500 mb-2">選擇刪除原因</p>
+            <div className="space-y-2 mb-5">
+              {[
+                { value: 'spam', label: '垃圾訊息' },
+                { value: 'inappropriate', label: '不當內容' },
+                { value: 'hate', label: '仇恨言論' },
+                { value: 'harassment', label: '騷擾霸凌' },
+                { value: 'misinformation', label: '散佈錯誤資訊' },
+                { value: 'other', label: '其他違規' },
+              ].map(({ value, label }) => (
+                <label key={value} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer border transition-all ${batchReason === value ? 'border-red-500/40 bg-red-500/10' : 'border-white/6 hover:bg-white/5'}`}>
+                  <input type="radio" name="batchReason" value={value} checked={batchReason === value}
+                    onChange={() => setBatchReason(value)} className="accent-red-500" />
+                  <span className="text-sm text-white">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setBatchModal(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-gray-400 hover:bg-white/5 transition-colors">
+                取消
+              </button>
+              <button onClick={confirmBatchDelete} disabled={batchLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 text-white hover:bg-red-600 transition-colors font-medium disabled:opacity-50">
+                {batchLoading ? '刪除中...' : `確認刪除 ${selectedIds.size} 則`}
               </button>
             </div>
           </div>
@@ -388,6 +467,38 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Batch action toolbar */}
+            {questions.length > 0 && (
+              <div className="flex items-center gap-3 mb-3 px-1">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-500 hover:text-white transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === questions.length && questions.length > 0}
+                    onChange={e => e.target.checked ? selectAll() : clearSelection()}
+                    className="accent-violet-500 w-4 h-4"
+                  />
+                  全選
+                </label>
+                {selectedIds.size > 0 && (
+                  <>
+                    <span className="text-xs text-gray-500">已選 <span className="text-white font-medium">{selectedIds.size}</span> 則</span>
+                    <button
+                      onClick={clearSelection}
+                      className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                    >
+                      取消選擇
+                    </button>
+                    <button
+                      onClick={() => { setBatchReason('inappropriate'); setBatchModal(true) }}
+                      className="ml-auto px-4 py-1.5 rounded-xl text-xs bg-red-500 text-white hover:bg-red-600 transition-colors font-medium"
+                    >
+                      🗑 批量刪除 ({selectedIds.size})
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {loading ? (
               <div className="flex justify-center mt-20">
                 <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-500 rounded-full animate-spin" />
@@ -398,7 +509,13 @@ export default function AdminPage() {
                   <div className="text-center mt-20 text-gray-600 text-sm">找不到問題</div>
                 )}
                 {questions.map(q => (
-                  <div key={q.id} className="card p-4 flex items-center gap-4">
+                  <div key={q.id} className={`card p-4 flex items-center gap-3 transition-all ${selectedIds.has(q.id) ? 'border-red-500/30 bg-red-500/5' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(q.id)}
+                      onChange={() => toggleSelect(q.id)}
+                      className="accent-red-500 w-4 h-4 shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{q.question_text}</p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">

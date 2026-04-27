@@ -17,7 +17,7 @@ export default function RefundPage() {
             {isEn ? 'Refund Policy' : '退款政策'}
           </h1>
           <p className="text-gray-500 text-sm">
-            {isEn ? 'Last updated: January 1, 2025' : '最後更新：2025 年 1 月 1 日'}
+            {isEn ? 'Last updated: August 5, 2025' : '最後更新：2025 年 8 月 5 日'}
           </p>
         </div>
 
