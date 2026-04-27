@@ -8,6 +8,7 @@ import { getProfile, upsertProfile } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
 import { AGE_RANGES, GENDERS, INTERESTS } from '@/types'
 import { useLang } from '@/lib/i18n'
+import { subscribeToPush } from '@/components/PushInit'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -21,6 +22,8 @@ export default function SettingsPage() {
   const [gender, setGender] = useState('')
   const [interests, setInterests] = useState<string[]>([])
   const [isPro, setIsPro] = useState(false)
+  const [notifyOn, setNotifyOn] = useState(false)
+  const [notifyLoading, setNotifyLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -38,10 +41,27 @@ export default function SettingsPage() {
         setGender(profile.gender ?? '')
         setInterests(profile.interests ?? [])
         setIsPro(profile.is_pro ?? false)
+        setNotifyOn(!!(profile as { notify_votes?: boolean }).notify_votes)
       }
       setLoading(false)
     })
   }, [router])
+
+  async function toggleNotify() {
+    if (notifyLoading) return
+    setNotifyLoading(true)
+    const supabase = createClient()
+    if (!notifyOn) {
+      const perm = await Notification.requestPermission()
+      if (perm !== 'granted') { setNotifyLoading(false); return }
+      const ok = await subscribeToPush()
+      if (ok) setNotifyOn(true)
+    } else {
+      await supabase.from('profiles').update({ notify_votes: false, notify_expiry: false }).eq('id', userId)
+      setNotifyOn(false)
+    }
+    setNotifyLoading(false)
+  }
 
   function toggleInterest(i: string) {
     setInterests(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])
@@ -133,6 +153,27 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Push notifications */}
+            {'Notification' in window && (
+              <div className="card p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">{isEn ? '🔔 Push Notifications' : '🔔 推播通知'}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {isEn ? 'Get notified on vote milestones & results' : '票數里程碑與結果出爐時通知你'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={toggleNotify}
+                    disabled={notifyLoading}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${notifyOn ? 'gradient-bg' : 'bg-white/10'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${notifyOn ? 'translate-x-6' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Add to home screen */}
             <div className="card p-5">

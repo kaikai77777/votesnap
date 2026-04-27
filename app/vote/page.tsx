@@ -88,6 +88,11 @@ export default function VotePage() {
         setIndex(i => i + 1)
         return
       }
+      fetch('/api/push/milestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: q.id }),
+      }).catch(() => {})
     }
 
     setLastVote(vote)

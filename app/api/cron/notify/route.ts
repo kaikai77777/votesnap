@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
+import webpush from 'web-push'
+
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL!,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!,
+)
 
 export async function GET(req: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY)
@@ -38,6 +45,25 @@ export async function GET(req: NextRequest) {
     // Get user email from auth.users
     const { data: { user } } = await supabase.auth.admin.getUserById(q.user_id)
     if (!user?.email) continue
+
+    // Web push notification
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('push_subscription, notify_expiry')
+      .eq('id', q.user_id)
+      .single()
+    if (profile?.push_subscription && profile.notify_expiry) {
+      try {
+        await webpush.sendNotification(
+          profile.push_subscription as webpush.PushSubscription,
+          JSON.stringify({
+            title: '投票結果出來了！🎉',
+            body: `「${q.question_text}」共 ${total} 票`,
+            url: `${process.env.NEXT_PUBLIC_SITE_URL}/result/${q.id}`,
+          })
+        )
+      } catch { /* subscription expired */ }
+    }
 
     await resend.emails.send({
       from: 'votesnap <notify@votesnap.online>',

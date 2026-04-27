@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import { LangToggle } from '@/components/LangToggle'
+import { PushInit } from '@/components/PushInit'
 
 export const metadata: Metadata = {
   title: 'votesnap — Can\'t decide? Snap a vote.',
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/logo-icon.png" />
       </head>
-      <body><Providers>{children}<LangToggle /></Providers></body>
+      <body><Providers>{children}<LangToggle /><PushInit /></Providers></body>
     </html>
   )
 }
