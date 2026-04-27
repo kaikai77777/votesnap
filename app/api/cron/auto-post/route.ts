@@ -13,13 +13,11 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Get all bank questions
   const { data: bank } = await admin.from('question_bank').select('*')
   if (!bank || bank.length === 0) {
     return NextResponse.json({ ok: true, posted: 0, note: 'Question bank is empty' })
   }
 
-  // Get all combinations already posted by bot (never repeat)
   const { data: posted } = await admin
     .from('questions')
     .select('question_text, option_a, option_b')
@@ -29,18 +27,20 @@ export async function GET(req: NextRequest) {
     (posted ?? []).map(q => `${q.question_text}|${q.option_a}|${q.option_b}`)
   )
 
-  // Filter out already-posted combinations
   const available = bank.filter(q =>
     !postedKeys.has(`${q.question_text}|${q.option_a}|${q.option_b}`)
   )
 
   if (available.length === 0) {
-    return NextResponse.json({ ok: true, posted: 0, note: 'All questions have been posted — add more to the bank' })
+    return NextResponse.json({ ok: true, posted: 0, note: 'All questions have been posted' })
   }
 
-  // Pick in order (FIFO — oldest bank questions first, so next batch is predictable)
-  available.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-  const picks = available.slice(0, Math.min(QUESTIONS_PER_RUN, available.length))
+  // Priority questions first, then FIFO by created_at
+  const priority = available.filter(q => q.is_priority)
+  const normal = available.filter(q => !q.is_priority)
+  normal.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  const sorted = [...priority, ...normal]
+  const picks = sorted.slice(0, Math.min(QUESTIONS_PER_RUN, sorted.length))
 
   const now = Date.now()
   const rows = picks.map((q, i) => ({
@@ -57,6 +57,12 @@ export async function GET(req: NextRequest) {
 
   const { error } = await admin.from('questions').insert(rows)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Clear is_priority on posted questions
+  const priorityIds = picks.filter(q => q.is_priority).map(q => q.id)
+  if (priorityIds.length > 0) {
+    await admin.from('question_bank').update({ is_priority: false }).in('id', priorityIds)
+  }
 
   return NextResponse.json({
     ok: true,

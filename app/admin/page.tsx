@@ -18,6 +18,7 @@ interface BankQuestion {
   category: string
   duration_minutes: number
   created_at: string
+  is_priority: boolean
 }
 
 interface Stats {
@@ -77,6 +78,7 @@ export default function AdminPage() {
   const [bankLoading, setBankLoading] = useState(false)
   const [bankSaving, setBankSaving] = useState(false)
   const [bankDeleting, setBankDeleting] = useState<string | null>(null)
+  const [bankPrioritizing, setBankPrioritizing] = useState<string | null>(null)
   const [showBankForm, setShowBankForm] = useState(false)
   const [newQ, setNewQ] = useState({ question_text: '', option_a: '', option_b: '', category: '生活', duration_minutes: 1440 })
   const [autoStatus, setAutoStatus] = useState<{ nextFireAt: string; remaining: number; nextQuestions: BankQuestion[] } | null>(null)
@@ -262,6 +264,22 @@ export default function AdminPage() {
       showToast('已從題庫移除')
     } else {
       showToast('刪除失敗', 'error')
+    }
+  }
+
+  async function togglePriority(id: string, current: boolean) {
+    setBankPrioritizing(id)
+    const res = await fetch('/api/admin/question-bank/set-priority', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_priority: !current }),
+    })
+    setBankPrioritizing(null)
+    if (res.ok) {
+      setBankQuestions(prev => prev.map(q => q.id === id ? { ...q, is_priority: !current } : q))
+      showToast(!current ? '⚡ 已設為優先發文' : '已取消優先')
+    } else {
+      showToast('操作失敗', 'error')
     }
   }
 
@@ -767,9 +785,14 @@ export default function AdminPage() {
             ) : (
               <div className="space-y-2">
                 {bankQuestions.map(q => (
-                  <div key={q.id} className="card p-4">
+                  <div key={q.id} className={`card p-4 transition-all ${q.is_priority ? 'border-amber-500/30 bg-amber-500/5' : ''}`}>
                     <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {q.is_priority && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-400 border border-amber-500/25 font-medium">⚡ 優先</span>
+                          )}
+                        </div>
                         <p className="text-white text-sm font-medium leading-snug mb-2">{q.question_text}</p>
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 text-xs font-medium">A: {q.option_a}</span>
@@ -781,13 +804,27 @@ export default function AdminPage() {
                           <span>{q.duration_minutes >= 1440 ? `${q.duration_minutes / 1440} 天` : `${q.duration_minutes / 60} 小時`}</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteBankQuestion(q.id)}
-                        disabled={bankDeleting === q.id}
-                        className="shrink-0 w-8 h-8 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors flex items-center justify-center text-sm disabled:opacity-40"
-                      >
-                        {bankDeleting === q.id ? '·' : '🗑'}
-                      </button>
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <button
+                          onClick={() => togglePriority(q.id, q.is_priority)}
+                          disabled={bankPrioritizing === q.id}
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-colors disabled:opacity-40 ${
+                            q.is_priority
+                              ? 'bg-amber-500/30 text-amber-400 hover:bg-amber-500/50'
+                              : 'bg-white/8 text-gray-500 hover:bg-amber-500/20 hover:text-amber-400'
+                          }`}
+                          title={q.is_priority ? '取消優先' : '設為優先發文'}
+                        >
+                          {bankPrioritizing === q.id ? '·' : '⚡'}
+                        </button>
+                        <button
+                          onClick={() => deleteBankQuestion(q.id)}
+                          disabled={bankDeleting === q.id}
+                          className="w-8 h-8 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors flex items-center justify-center text-sm disabled:opacity-40"
+                        >
+                          {bankDeleting === q.id ? '·' : '🗑'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
