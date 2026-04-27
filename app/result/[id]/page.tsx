@@ -4,13 +4,22 @@ import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile, getDemographicStats } from '@/lib/queries'
+import { getQuestionById, getVotesByQuestion, calcVoteStats, isExpired, formatCountdown, getProfile, getDemographicStats, getReactions, addReaction, removeReaction } from '@/lib/queries'
 import { CATEGORY_EN } from '@/types'
 import { Navbar } from '@/components/Navbar'
 import { ResultBar } from '@/components/ResultBar'
 import ShareModal from '@/components/ShareModal'
 import { useLang } from '@/lib/i18n'
 import type { Question } from '@/types'
+
+const EMOJIS = ['🤣', '😱', '❤️', '🤔', '👀']
+
+function getAnonymousId(): string {
+  if (typeof window === 'undefined') return ''
+  let id = localStorage.getItem('votesnap_anon_id')
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('votesnap_anon_id', id) }
+  return id
+}
 
 function getEmotionalCopy(pctA: number, total: number): string {
   if (total < 3) return 'Waiting for more votes...'
@@ -21,6 +30,8 @@ function getEmotionalCopy(pctA: number, total: number): string {
   return "It's 50/50. Flip a coin? Or trust yourself."
 }
 
+type Stats = { total: number; a: number; b: number; c: number; d: number; pctA: number; pctB: number; pctC: number; pctD: number }
+
 function ResultContent() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
@@ -28,7 +39,7 @@ function ResultContent() {
   const isEn = t('result.live') === 'Live'
 
   const [question, setQuestion] = useState<Question | null>(null)
-  const [stats, setStats] = useState({ total: 0, a: 0, b: 0, pctA: 0, pctB: 0 })
+  const [stats, setStats] = useState<Stats>({ total: 0, a: 0, b: 0, c: 0, d: 0, pctA: 0, pctB: 0, pctC: 0, pctD: 0 })
   const [countdown, setCountdown] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,6 +50,9 @@ function ResultContent() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [extending, setExtending] = useState(false)
   const [demographics, setDemographics] = useState<Awaited<ReturnType<typeof getDemographicStats>>>(null)
+  const [reactions, setReactions] = useState<Record<string, number>>({})
+  const [myReactions, setMyReactions] = useState<Set<string>>(new Set())
+  const [anonId, setAnonId] = useState<string>('')
 
   const isCreated = searchParams.get('created') === 'true'
 
@@ -52,19 +66,35 @@ function ResultContent() {
   }, [id])
 
   useEffect(() => {
+    const anon = getAnonymousId()
+    setAnonId(anon)
+
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       fetchData()
-      if (!user) return
-      setCurrentUserId(user.id)
-      const { data: profile } = await getProfile(user.id)
-      if (profile?.display_name) setDisplayName(profile.display_name)
-      if (profile?.is_pro) {
-        setIsPro(true)
-        getDemographicStats(id).then(setDemographics)
+      if (user) {
+        setCurrentUserId(user.id)
+        const { data: profile } = await getProfile(user.id)
+        if (profile?.display_name) setDisplayName(profile.display_name)
+        if (profile?.is_pro) {
+          setIsPro(true)
+          getDemographicStats(id).then(setDemographics)
+        }
+      }
+      // Load reactions
+      const { data: rxData } = await getReactions(id)
+      if (rxData) {
+        const counts: Record<string, number> = {}
+        rxData.forEach(r => { counts[r.emoji] = (counts[r.emoji] ?? 0) + 1 })
+        setReactions(counts)
+        const uid = user?.id ?? null
+        const myRx = new Set(rxData
+          .filter(r => (uid && r.user_id === uid) || (!uid && r.anonymous_id === anon))
+          .map(r => r.emoji))
+        setMyReactions(myRx)
       }
     })
-  }, [fetchData])
+  }, [fetchData, id])
 
   useEffect(() => {
     if (!question || isExpired(question.expires_at)) return
@@ -74,12 +104,15 @@ function ResultContent() {
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'votes', filter: `question_id=eq.${id}` },
         (payload) => {
-          const vote = (payload.new as { vote: string }).vote as 'A' | 'B'
+          const vote = (payload.new as { vote: string }).vote
           setStats(prev => {
             const a = prev.a + (vote === 'A' ? 1 : 0)
             const b = prev.b + (vote === 'B' ? 1 : 0)
-            const total = a + b
-            return { total, a, b, pctA: Math.round((a / total) * 100), pctB: Math.round((b / total) * 100) }
+            const c = prev.c + (vote === 'C' ? 1 : 0)
+            const d = prev.d + (vote === 'D' ? 1 : 0)
+            const total = a + b + c + d
+            if (total === 0) return prev
+            return { total, a, b, c, d, pctA: Math.round((a/total)*100), pctB: Math.round((b/total)*100), pctC: Math.round((c/total)*100), pctD: Math.round((d/total)*100) }
           })
         }
       )
@@ -94,6 +127,21 @@ function ResultContent() {
     const timer = setInterval(update, 1000)
     return () => clearInterval(timer)
   }, [question])
+
+  async function handleReaction(emoji: string) {
+    const has = myReactions.has(emoji)
+    if (has) {
+      await removeReaction(id, emoji, currentUserId, currentUserId ? null : anonId)
+      setMyReactions(prev => { const next = new Set(prev); next.delete(emoji); return next })
+      setReactions(prev => ({ ...prev, [emoji]: Math.max(0, (prev[emoji] ?? 1) - 1) }))
+    } else {
+      const { error: rxErr } = await addReaction(id, emoji, currentUserId, currentUserId ? null : anonId)
+      if (!rxErr) {
+        setMyReactions(prev => new Set([...prev, emoji]))
+        setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] ?? 0) + 1 }))
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -119,6 +167,14 @@ function ResultContent() {
   const isOwner = currentUserId === question.user_id
   const emotionalCopy = getEmotionalCopy(stats.pctA, stats.total)
   const voteUrl = typeof window !== 'undefined' ? `${window.location.origin}/result/${id}` : `https://votesnap.online/result/${id}`
+
+  const optionBars = [
+    { key: 'A', label: question.option_a, pct: stats.pctA, count: stats.a },
+    { key: 'B', label: question.option_b, pct: stats.pctB, count: stats.b },
+    ...(question.option_c ? [{ key: 'C', label: question.option_c, pct: stats.pctC, count: stats.c }] : []),
+    ...(question.option_d ? [{ key: 'D', label: question.option_d, pct: stats.pctD, count: stats.d }] : []),
+  ]
+  const winnerPct = Math.max(...optionBars.map(o => o.pct))
 
   async function handleExtend() {
     if (extending) return
@@ -161,12 +217,38 @@ function ResultContent() {
         <h1 className="text-2xl font-bold text-white leading-snug mb-8">{question.question_text}</h1>
 
         <div className="card p-6 mb-4 space-y-5">
-          <ResultBar label={question.option_a} percent={stats.pctA} count={stats.a} isWinner={stats.pctA >= stats.pctB} gradient />
-          <ResultBar label={question.option_b} percent={stats.pctB} count={stats.b} isWinner={stats.pctB > stats.pctA} />
+          {optionBars.map((opt, i) => (
+            <ResultBar
+              key={opt.key}
+              label={opt.label}
+              percent={opt.pct}
+              count={opt.count}
+              isWinner={opt.pct === winnerPct && winnerPct > 0}
+              gradient={i === 0}
+            />
+          ))}
           <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
             <span>{t('result.total', { n: stats.total })}</span>
             {active && <span className="text-gray-600">{t('result.updates')}</span>}
           </div>
+        </div>
+
+        {/* Emoji reactions */}
+        <div className="flex gap-2 justify-center mb-4">
+          {EMOJIS.map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => handleReaction(emoji)}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border transition-all ${
+                myReactions.has(emoji)
+                  ? 'bg-white/10 border-white/25 scale-105'
+                  : 'border-white/8 text-gray-400 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-xl leading-none">{emoji}</span>
+              {(reactions[emoji] ?? 0) > 0 && <span className="text-[10px] text-gray-400 leading-none">{reactions[emoji]}</span>}
+            </button>
+          ))}
         </div>
 
         <div className="bg-white/4 border border-white/6 rounded-2xl p-4 mb-6">
@@ -241,9 +323,15 @@ function ResultContent() {
           <Link href="/vote" className="flex-1 py-3.5 rounded-2xl border border-white/10 text-gray-300 text-center text-sm hover:bg-white/5 transition-colors">
             {t('result.keepVoting')}
           </Link>
-          <Link href="/ask" className="flex-1 btn-gradient py-3.5 rounded-2xl text-center text-sm">
-            {t('result.askAnother')}
-          </Link>
+          {currentUserId ? (
+            <Link href="/ask" className="flex-1 btn-gradient py-3.5 rounded-2xl text-center text-sm">
+              {t('result.askAnother')}
+            </Link>
+          ) : (
+            <Link href="/login" className="flex-1 btn-gradient py-3.5 rounded-2xl text-center text-sm">
+              {isEn ? 'Login to ask' : '登入後發問'}
+            </Link>
+          )}
         </div>
 
         {isOwner && (
@@ -255,7 +343,6 @@ function ResultContent() {
           </button>
         )}
 
-        {/* QR Code — owner only */}
         {isOwner && <div className="mt-3">
           <button
             onClick={() => setShowQr(v => !v)}
@@ -277,7 +364,6 @@ function ResultContent() {
           )}
         </div>}
 
-        {/* Extend time — Pro owner only */}
         {isPro && isOwner && active && (
           <button
             onClick={handleExtend}

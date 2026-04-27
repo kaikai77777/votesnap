@@ -14,6 +14,8 @@ export interface Question {
   question_text: string
   option_a: string
   option_b: string
+  option_c?: string | null
+  option_d?: string | null
   category: string | null
   duration_minutes: number
   status: string
@@ -26,7 +28,16 @@ export interface Vote {
   id: string
   question_id: string
   user_id: string
-  vote: 'A' | 'B'
+  vote: string
+  created_at: string
+}
+
+export interface Reaction {
+  id: string
+  question_id: string
+  user_id: string | null
+  anonymous_id: string | null
+  emoji: string
   created_at: string
 }
 

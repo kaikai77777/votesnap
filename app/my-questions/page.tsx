@@ -39,6 +39,7 @@ export default function MyQuestionsPage() {
   const isEn = t('myq.title') === 'My Questions'
 
   const [tab, setTab] = useState<'asked' | 'voted'>('asked')
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [questions, setQuestions] = useState<QuestionWithStats[]>([])
   const [votedQuestions, setVotedQuestions] = useState<VotedQuestion[]>([])
   const [isPro, setIsPro] = useState(false)
@@ -154,6 +155,18 @@ export default function MyQuestionsPage() {
     ? new Date(viewYear, viewMonth).toLocaleDateString('en-US', { month: 'long' })
     : `${viewMonth + 1}月`
 
+  function relativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return isEn ? 'just now' : '剛剛'
+    if (mins < 60) return isEn ? `${mins}m ago` : `${mins} 分鐘前`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return isEn ? `${hrs}h ago` : `${hrs} 小時前`
+    const days = Math.floor(hrs / 24)
+    if (days < 30) return isEn ? `${days}d ago` : `${days} 天前`
+    return isEn ? `${Math.floor(days/30)}mo ago` : `${Math.floor(days/30)} 個月前`
+  }
+
   const selectedQuestions = questionsByDate.get(selectedDate) ?? []
 
   function dayLabel(d: string) {
@@ -172,9 +185,23 @@ export default function MyQuestionsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">{t('myq.title')}</h1>
-          <Link href="/ask" className="btn-gradient px-4 py-2 rounded-full text-sm">
-            + {isEn ? 'Ask' : '發問'}
-          </Link>
+          <div className="flex items-center gap-2">
+            {tab === 'asked' && (
+              <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+                <button onClick={() => setViewMode('list')}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-600 hover:text-gray-400'}`}>
+                  ☰
+                </button>
+                <button onClick={() => setViewMode('calendar')}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${viewMode === 'calendar' ? 'bg-white/10 text-white' : 'text-gray-600 hover:text-gray-400'}`}>
+                  📅
+                </button>
+              </div>
+            )}
+            <Link href="/ask" className="btn-gradient px-4 py-2 rounded-full text-sm">
+              + {isEn ? 'Ask' : '發問'}
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -200,7 +227,74 @@ export default function MyQuestionsPage() {
         )}
 
         {/* ── Tab: Asked ── */}
-        {!loading && tab === 'asked' && (
+        {!loading && tab === 'asked' && viewMode === 'list' && (
+          <>
+            {questions.length === 0 ? (
+              <div className="text-center mt-6 text-gray-500">
+                <div className="text-5xl mb-4">💬</div>
+                <p className="mb-4">{t('myq.empty')}</p>
+                <Link href="/ask" className="btn-gradient px-6 py-3 rounded-2xl text-sm">{t('myq.emptyAction')}</Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[...questions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((q) => {
+                  const active = !isExpired(q.expires_at) && q.status === 'active'
+                  return (
+                    <div key={q.id} className="card p-5">
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium text-sm leading-snug line-clamp-2">{q.question_text}</p>
+                          <p className="text-xs text-gray-600 mt-1">{relativeTime(q.created_at)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
+                            {active ? t('myq.live') : t('myq.ended')}
+                          </span>
+                          <button
+                            onClick={() => setConfirmDeleteId(confirmDeleteId === q.id ? null : q.id)}
+                            className="w-7 h-7 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-gray-600 hover:text-red-400 transition-colors"
+                          >
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      {confirmDeleteId === q.id && (
+                        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between gap-3">
+                          <p className="text-red-400 text-xs">{isEn ? 'Delete this question?' : '確定刪除此問題？'}</p>
+                          <div className="flex gap-2 shrink-0">
+                            <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1 rounded-lg text-xs text-gray-400 bg-white/5 hover:bg-white/10 transition-colors">{isEn ? 'Cancel' : '取消'}</button>
+                            <button onClick={() => handleDelete(q.id)} disabled={deleting} className="px-3 py-1 rounded-lg text-xs text-white bg-red-500/80 hover:bg-red-500 transition-colors disabled:opacity-50">{deleting ? '...' : isEn ? 'Delete' : '刪除'}</button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-1.5 mb-4">
+                        {[{ label: q.option_a, pct: q.pctA, gradient: true }, { label: q.option_b, pct: q.pctB, gradient: false }].map(({ label, pct, gradient }) => (
+                          <div key={label} className="flex items-center gap-2 text-xs">
+                            <span className="w-6 text-gray-500 truncate">{label}</span>
+                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${gradient ? 'gradient-bg' : 'bg-white/20'}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="w-8 text-right text-gray-400">{pct}%</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">{q.total} {isEn ? 'votes' : '票'}</span>
+                        <button onClick={() => setShareQ(q)} className="btn-gradient px-4 py-1.5 rounded-full text-xs font-medium">
+                          {isEn ? 'Share' : '分享結果'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {!loading && tab === 'asked' && viewMode === 'calendar' && (
           <>
             {/* Calendar */}
             <div className="card p-4 mb-5">

@@ -7,7 +7,7 @@ import { useLang } from '@/lib/i18n'
 
 interface VoteCardProps {
   question: Question
-  onVote: (vote: 'A' | 'B') => Promise<void>
+  onVote: (vote: string) => Promise<void>
   onSkip?: () => void
   current: number
   total: number
@@ -18,20 +18,27 @@ const SWIPE_THRESHOLD = 80
 export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardProps) {
   const { t } = useLang()
   const isEn = t('vote.loading') === 'Loading questions...'
-  const [voting, setVoting] = useState<'A' | 'B' | null>(null)
+  const [voting, setVoting] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(formatCountdown(question.expires_at))
   const [imgIndex, setImgIndex] = useState(0)
   const [lightbox, setLightbox] = useState(false)
   const [reported, setReported] = useState(false)
   const [showReport, setShowReport] = useState(false)
 
-  // Swipe state
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const [swipeX, setSwipeX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
 
   const images = question.image_urls?.filter(Boolean) ?? []
+
+  const options = [
+    { key: 'A', label: question.option_a },
+    { key: 'B', label: question.option_b },
+    ...(question.option_c ? [{ key: 'C', label: question.option_c }] : []),
+    ...(question.option_d ? [{ key: 'D', label: question.option_d }] : []),
+  ]
+  const isMulti = options.length > 2
 
   useEffect(() => {
     const timer = setInterval(() => setCountdown(formatCountdown(question.expires_at)), 1000)
@@ -56,7 +63,7 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
     setShowReport(false)
   }
 
-  async function handleVote(v: 'A' | 'B') {
+  async function handleVote(v: string) {
     if (voting) return
     setVoting(v)
     await onVote(v)
@@ -99,17 +106,16 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
         </div>
 
         <div
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          style={{
+          onTouchStart={isMulti ? undefined : onTouchStart}
+          onTouchMove={isMulti ? undefined : onTouchMove}
+          onTouchEnd={isMulti ? undefined : onTouchEnd}
+          style={!isMulti ? {
             transform: `translateX(${swipeX * 0.35}px) rotate(${swipeX * 0.04}deg)`,
             transition: isSwiping ? 'none' : 'transform 0.3s ease',
-          }}
+          } : undefined}
           className="bg-[#141414] border border-white/8 rounded-2xl overflow-hidden shadow-2xl relative select-none"
         >
-          {/* Swipe hint overlays */}
-          {swipeX > 30 && (
+          {!isMulti && swipeX > 30 && (
             <div
               className="absolute inset-0 z-10 rounded-2xl flex items-center justify-start pl-8 pointer-events-none"
               style={{ background: 'linear-gradient(to right, transparent, rgba(34,197,94,0.18))', opacity: swipeOpacity }}
@@ -117,7 +123,7 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
               <span className="text-green-400 font-black text-3xl border-4 border-green-400 rounded-xl px-3 py-1 rotate-[-12deg]">YES</span>
             </div>
           )}
-          {swipeX < -30 && (
+          {!isMulti && swipeX < -30 && (
             <div
               className="absolute inset-0 z-10 rounded-2xl flex items-center justify-end pr-8 pointer-events-none"
               style={{ background: 'linear-gradient(to left, transparent, rgba(239,68,68,0.18))', opacity: swipeOpacity }}
@@ -126,7 +132,6 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
             </div>
           )}
 
-          {/* Image carousel */}
           {images.length > 0 && (
             <div className="relative overflow-hidden rounded-t-2xl">
               <button onClick={() => setLightbox(true)} className="w-full block relative group">
@@ -184,39 +189,52 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
                 {reported && <div className="absolute right-0 top-8 z-20 bg-[#1C1C1E] border border-white/10 rounded-xl px-3 py-2 text-xs text-orange-400 w-36 shadow-xl">{isEn ? 'Reported ✓' : '已檢舉 ✓'}</div>}
               </div>
             </div>
+
             <p className="text-white text-2xl font-semibold leading-snug mb-8 min-h-[60px]">
               {question.question_text}
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => handleVote('B')} disabled={!!voting}
-                className={`py-4 rounded-2xl text-lg font-bold border border-white/10 transition-all disabled:cursor-not-allowed
-                  ${voting === 'B' ? 'bg-red-500/20 border-red-500/50 text-red-400 scale-95' : 'bg-[#1E1E1E] text-white hover:bg-white/8 active:scale-95'}`}>
-                {voting === 'B' ? '✓' : `👎 ${question.option_b}`}
-              </button>
-              <button onClick={() => handleVote('A')} disabled={!!voting}
-                className={`py-4 rounded-2xl text-lg font-bold transition-all disabled:cursor-not-allowed
-                  ${voting === 'A' ? 'opacity-80 scale-95' : 'hover:opacity-90 active:scale-95'}
-                  bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white`}>
-                {voting === 'A' ? '✓' : `👍 ${question.option_a}`}
-              </button>
-            </div>
+
+            {isMulti ? (
+              <div className="flex flex-col gap-3">
+                {options.map((opt, i) => (
+                  <button key={opt.key} onClick={() => handleVote(opt.key)} disabled={!!voting}
+                    className={`w-full py-4 rounded-2xl text-base font-bold transition-all disabled:cursor-not-allowed ${
+                      voting === opt.key ? 'opacity-80 scale-[0.98]' : 'active:scale-[0.98]'
+                    } ${i === 0
+                      ? 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white'
+                      : 'bg-[#1E1E1E] border border-white/10 text-white hover:bg-white/8'
+                    }`}>
+                    {voting === opt.key ? '✓' : opt.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => handleVote('B')} disabled={!!voting}
+                  className={`py-4 rounded-2xl text-lg font-bold border border-white/10 transition-all disabled:cursor-not-allowed
+                    ${voting === 'B' ? 'bg-red-500/20 border-red-500/50 text-red-400 scale-95' : 'bg-[#1E1E1E] text-white hover:bg-white/8 active:scale-95'}`}>
+                  {voting === 'B' ? '✓' : `👎 ${options[1].label}`}
+                </button>
+                <button onClick={() => handleVote('A')} disabled={!!voting}
+                  className={`py-4 rounded-2xl text-lg font-bold transition-all disabled:cursor-not-allowed
+                    ${voting === 'A' ? 'opacity-80 scale-95' : 'hover:opacity-90 active:scale-95'}
+                    bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white`}>
+                  {voting === 'A' ? '✓' : `👍 ${options[0].label}`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Skip button */}
         {onSkip && (
           <div className="flex justify-center mt-4">
-            <button
-              onClick={onSkip}
-              className="text-gray-600 text-sm hover:text-gray-400 transition-colors px-6 py-2"
-            >
+            <button onClick={onSkip} className="text-gray-600 text-sm hover:text-gray-400 transition-colors px-6 py-2">
               {isEn ? 'Skip →' : '略過 →'}
             </button>
           </div>
         )}
       </div>
 
-      {/* Lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={() => setLightbox(false)}>
           <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl hover:bg-white/20 transition-colors" onClick={() => setLightbox(false)}>×</button>

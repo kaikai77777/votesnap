@@ -46,6 +46,8 @@ export async function createQuestion(payload: {
   question_text: string
   option_a: string
   option_b: string
+  option_c?: string
+  option_d?: string
   category: string
   duration_minutes: number
   is_priority?: boolean
@@ -172,10 +174,30 @@ export async function getDemographicStats(questionId: string) {
 export function calcVoteStats(votes: { vote: string }[]) {
   const total = votes.length
   const a = votes.filter((v) => v.vote === 'A').length
-  const b = total - a
-  const pctA = total > 0 ? Math.round((a / total) * 100) : 0
-  const pctB = total > 0 ? 100 - pctA : 0
-  return { total, a, b, pctA, pctB }
+  const b = votes.filter((v) => v.vote === 'B').length
+  const c = votes.filter((v) => v.vote === 'C').length
+  const d = votes.filter((v) => v.vote === 'D').length
+  const safe = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0
+  return { total, a, b, c, d, pctA: safe(a), pctB: safe(b), pctC: safe(c), pctD: safe(d) }
+}
+
+export async function getReactions(questionId: string) {
+  const supabase = createClient()
+  return supabase.from('reactions').select('emoji, user_id, anonymous_id').eq('question_id', questionId)
+}
+
+export async function addReaction(questionId: string, emoji: string, userId?: string | null, anonymousId?: string | null) {
+  const supabase = createClient()
+  return supabase.from('reactions')
+    .insert({ question_id: questionId, user_id: userId ?? null, anonymous_id: anonymousId ?? null, emoji })
+}
+
+export async function removeReaction(questionId: string, emoji: string, userId?: string | null, anonymousId?: string | null) {
+  const supabase = createClient()
+  let q = supabase.from('reactions').delete().eq('question_id', questionId).eq('emoji', emoji)
+  if (userId) return q.eq('user_id', userId)
+  if (anonymousId) return q.eq('anonymous_id', anonymousId)
+  return q
 }
 
 export function isExpired(expiresAt: string) {

@@ -13,6 +13,16 @@ import { CATEGORIES, CATEGORY_EN } from '@/types'
 const DAILY_LIMIT = 5
 const MAX_CHARS = 120
 
+const FREE_DURATIONS = [15, 60, 1440]
+const PRO_DURATIONS = [4320, 10080, 43200]
+
+function durationLabel(m: number, isEn: boolean): string {
+  if (m < 60) return isEn ? `${m} min` : `${m} 分鐘`
+  if (m < 1440) return isEn ? `${m / 60} hr` : `${m / 60} 小時`
+  const d = m / 1440
+  return isEn ? `${d}d` : `${d} 天`
+}
+
 export default function AskPage() {
   const router = useRouter()
   const { t } = useLang()
@@ -20,10 +30,9 @@ export default function AskPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isPro, setIsPro] = useState(false)
   const [text, setText] = useState('')
-  const [optionA, setOptionA] = useState('Yes')
-  const [optionB, setOptionB] = useState('No')
+  const [options, setOptions] = useState(['Yes', 'No'])
   const [category, setCategory] = useState('')
-  const [duration, setDuration] = useState(10)
+  const [duration, setDuration] = useState(1440)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -44,6 +53,20 @@ export default function AskPage() {
     })
   }, [router])
 
+  function updateOption(i: number, val: string) {
+    setOptions(prev => prev.map((o, idx) => idx === i ? val.slice(0, 20) : o))
+  }
+
+  function addOption() {
+    if (options.length >= 4) return
+    setOptions(prev => [...prev, ''])
+  }
+
+  function removeOption(i: number) {
+    if (options.length <= 2) return
+    setOptions(prev => prev.filter((_, idx) => idx !== i))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!userId) return
@@ -56,8 +79,10 @@ export default function AskPage() {
     const { data, error: err } = await createQuestion({
       user_id: userId,
       question_text: text.trim(),
-      option_a: optionA || 'Yes',
-      option_b: optionB || 'No',
+      option_a: options[0] || 'Yes',
+      option_b: options[1] || 'No',
+      option_c: options[2] || undefined,
+      option_d: options[3] || undefined,
       category: category || '其他',
       duration_minutes: duration,
       is_priority: isPro,
@@ -126,23 +151,32 @@ export default function AskPage() {
             <ImageUploader files={imageFiles} onChange={setImageFiles} maxFiles={3} />
           </div>
 
+          {/* Options */}
           <div className="card p-5 space-y-3">
             <label className="block text-sm font-medium text-gray-400">{t('ask.options')}</label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <span className="text-xs text-gray-600 mb-1 block">{t('ask.optionA')}</span>
-                <input value={optionA} onChange={(e) => setOptionA(e.target.value.slice(0, 20))}
-                  placeholder="Yes"
-                  className="w-full bg-[#1E1E1E] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50" />
+            {options.map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs text-gray-600 w-4 shrink-0">{String.fromCharCode(65 + i)}</span>
+                <input
+                  value={opt}
+                  onChange={(e) => updateOption(i, e.target.value)}
+                  placeholder={i === 0 ? 'Yes' : i === 1 ? 'No' : `${isEn ? 'Option' : '選項'} ${i + 1}`}
+                  className="flex-1 bg-[#1E1E1E] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                />
+                {i >= 2 && (
+                  <button type="button" onClick={() => removeOption(i)}
+                    className="w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors shrink-0">
+                    ×
+                  </button>
+                )}
               </div>
-              <div className="flex items-center pt-4 text-gray-600">/</div>
-              <div className="flex-1">
-                <span className="text-xs text-gray-600 mb-1 block">{t('ask.optionB')}</span>
-                <input value={optionB} onChange={(e) => setOptionB(e.target.value.slice(0, 20))}
-                  placeholder="No"
-                  className="w-full bg-[#1E1E1E] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50" />
-              </div>
-            </div>
+            ))}
+            {options.length < 4 && (
+              <button type="button" onClick={addOption}
+                className="w-full py-2.5 rounded-xl border border-dashed border-white/10 text-gray-600 text-sm hover:border-white/20 hover:text-gray-400 transition-colors">
+                + {isEn ? 'Add option' : '新增選項'}
+              </button>
+            )}
           </div>
 
           <div className="card p-5 space-y-4">
@@ -157,22 +191,34 @@ export default function AskPage() {
                 ))}
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">{t('ask.duration')}</label>
-              <div className="flex gap-2 flex-wrap">
-                {(isPro ? [10, 15, 30, 60, 120] : [10, 15, 30]).map((d) => (
+              <div className="grid grid-cols-3 gap-2">
+                {FREE_DURATIONS.map((d) => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
-                    className={`flex-1 min-w-[60px] py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`py-3 rounded-xl text-sm font-medium transition-all ${
                       duration === d ? 'gradient-bg text-white' : 'border border-white/10 text-gray-300 hover:border-white/20'
-                    }`}>{t('ask.durationMin', { n: d })}</button>
+                    }`}>
+                    {d === 15 && '⚡ '}
+                    {durationLabel(d, isEn)}
+                  </button>
+                ))}
+                {PRO_DURATIONS.map((d) => (
+                  <button key={d} type="button"
+                    onClick={() => isPro ? setDuration(d) : router.push('/pricing')}
+                    className={`py-3 rounded-xl text-sm font-medium transition-all relative ${
+                      isPro && duration === d ? 'gradient-bg text-white'
+                      : isPro ? 'border border-white/10 text-gray-300 hover:border-white/20'
+                      : 'border border-white/6 text-gray-600'
+                    }`}>
+                    {durationLabel(d, isEn)}
+                    {!isPro && (
+                      <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full text-[9px] gradient-bg text-white font-bold leading-tight">PRO</span>
+                    )}
+                  </button>
                 ))}
               </div>
-              {!isPro && (
-                <p className="text-xs text-gray-600 mt-2">
-                  <Link href="/pricing" className="text-violet-400 hover:underline underline-offset-2">{isEn ? 'Pro' : 'Pro 版'}</Link>
-                  {isEn ? ' unlocks 60 & 120 min' : ' 解鎖 60 & 120 分鐘'}
-                </p>
-              )}
             </div>
           </div>
 
