@@ -247,29 +247,53 @@ export default function MyQuestionsPage() {
             ) : (
               <div className="space-y-4">
                 {[...questions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((q) => {
+                  const isDeleted = q.status === 'deleted'
                   const active = !isExpired(q.expires_at) && q.status === 'active'
                   return (
-                    <div key={q.id} className="card p-5">
+                    <div key={q.id} className={`card p-5 ${isDeleted ? 'opacity-60 border-red-500/15' : ''}`}>
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm leading-snug line-clamp-2">{q.question_text}</p>
+                          <p className={`font-medium text-sm leading-snug line-clamp-2 ${isDeleted ? 'text-gray-400 line-through decoration-red-500/50' : 'text-white'}`}>{q.question_text}</p>
                           <p className="text-xs text-gray-600 mt-1">{relativeTime(q.created_at)}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
-                            {active ? t('myq.live') : t('myq.ended')}
-                          </span>
-                          <button
-                            onClick={() => setConfirmDeleteId(confirmDeleteId === q.id ? null : q.id)}
-                            className="w-7 h-7 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-gray-600 hover:text-red-400 transition-colors"
-                          >
-                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                            </svg>
-                          </button>
+                          {isDeleted ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400">
+                              {isEn ? 'Removed' : '已下架'}
+                            </span>
+                          ) : (
+                            <>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${active ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-gray-500'}`}>
+                                {active ? t('myq.live') : t('myq.ended')}
+                              </span>
+                              <button
+                                onClick={() => setConfirmDeleteId(confirmDeleteId === q.id ? null : q.id)}
+                                className="w-7 h-7 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-gray-600 hover:text-red-400 transition-colors"
+                              >
+                                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      {confirmDeleteId === q.id && (
+
+                      {/* Deleted notice */}
+                      {isDeleted && (
+                        <div className="mb-4 px-3 py-2.5 rounded-xl bg-red-500/8 border border-red-500/20">
+                          <p className="text-red-400 text-xs font-medium mb-0.5">
+                            {isEn ? '⚠ This poll was removed by our team' : '⚠ 此投票已被管理員下架'}
+                          </p>
+                          {q.deleted_reason && (
+                            <p className="text-gray-500 text-xs">
+                              {isEn ? 'Reason: ' : '原因：'}{q.deleted_reason}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {confirmDeleteId === q.id && !isDeleted && (
                         <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between gap-3">
                           <p className="text-red-400 text-xs">{isEn ? 'Delete this question?' : '確定刪除此問題？'}</p>
                           <div className="flex gap-2 shrink-0">
@@ -278,22 +302,26 @@ export default function MyQuestionsPage() {
                           </div>
                         </div>
                       )}
+
                       <div className="space-y-1.5 mb-4">
                         {[{ label: q.option_a, pct: q.pctA, gradient: true }, { label: q.option_b, pct: q.pctB, gradient: false }].map(({ label, pct, gradient }) => (
                           <div key={label} className="flex items-center gap-2 text-xs">
                             <span className="w-6 text-gray-500 truncate">{label}</span>
                             <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full ${gradient ? 'gradient-bg' : 'bg-white/20'}`} style={{ width: `${pct}%` }} />
+                              <div className={`h-full rounded-full ${gradient ? (isDeleted ? 'bg-gray-600' : 'gradient-bg') : 'bg-white/20'}`} style={{ width: `${pct}%` }} />
                             </div>
                             <span className="w-8 text-right text-gray-400">{pct}%</span>
                           </div>
                         ))}
                       </div>
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">{q.total} {isEn ? 'votes' : '票'}</span>
-                        <button onClick={() => setShareQ(q)} className="btn-gradient px-4 py-1.5 rounded-full text-xs font-medium">
-                          {isEn ? 'Share' : '分享結果'}
-                        </button>
+                        {!isDeleted && (
+                          <button onClick={() => setShareQ(q)} className="btn-gradient px-4 py-1.5 rounded-full text-xs font-medium">
+                            {isEn ? 'Share' : '分享結果'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )

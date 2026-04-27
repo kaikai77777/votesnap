@@ -147,7 +147,6 @@ export async function getUserQuestions(userId: string) {
     .from('questions')
     .select('*')
     .eq('user_id', userId)
-    .neq('status', 'deleted')
     .order('created_at', { ascending: false })
 }
 
