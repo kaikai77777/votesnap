@@ -6,15 +6,26 @@ import { LogoWordmark } from '@/components/Logo'
 import { useLang } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 
-const EXAMPLE_CARDS = [
-  { yes: 74, no: 26, votes: 312, zh: '要不要主動傳訊息給他？', en: 'Should I text first?', optA: 'Yes', optB: 'No' },
-  { yes: 58, no: 42, votes: 189, zh: '這件衣服值得買嗎？', en: 'Is this worth buying?', optA: 'Yes', optB: 'No' },
-  { yes: 67, no: 33, votes: 201, zh: '消夜吃什麼？', en: 'What to eat tonight?', optA: '麥當勞', optB: '豆漿店' },
+interface PreviewCard {
+  id: string
+  text: string
+  optA: string
+  optB: string
+  pctA: number
+  pctB: number
+  votes: number
+}
+
+const FALLBACK_CARDS: PreviewCard[] = [
+  { id: '', text: '要不要主動傳訊息給他？', optA: 'Yes', optB: 'No', pctA: 74, pctB: 26, votes: 312 },
+  { id: '', text: '這件衣服值得買嗎？', optA: 'Yes', optB: 'No', pctA: 58, pctB: 42, votes: 189 },
+  { id: '', text: '消夜吃什麼？', optA: '麥當勞', optB: '豆漿店', pctA: 67, pctB: 33, votes: 201 },
 ]
 
 export default function LandingPage() {
   const { t, lang } = useLang()
   const [stats, setStats] = useState({ todayQs: 0, totalVotes: 0 })
+  const [previewCards, setPreviewCards] = useState<PreviewCard[]>(FALLBACK_CARDS)
 
   useEffect(() => {
     const supabase = createClient()
@@ -26,6 +37,13 @@ export default function LandingPage() {
     ]).then(([qs, vs]) => {
       setStats({ todayQs: qs.count ?? 0, totalVotes: vs.count ?? 0 })
     })
+
+    fetch('/api/trending/preview')
+      .then(r => r.json())
+      .then((data: PreviewCard[]) => {
+        if (Array.isArray(data) && data.length >= 3) setPreviewCards(data.slice(0, 3))
+      })
+      .catch(() => {})
   }, [])
 
   const HOW_IT_WORKS = [
@@ -84,24 +102,29 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Example cards */}
+        {/* Live preview cards */}
         <div className="relative max-w-4xl mx-auto mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {EXAMPLE_CARDS.map((card, i) => (
-            <div key={i} className="card p-5 text-left hover:border-white/12 transition-colors">
-              <p className="text-white font-medium mb-4 text-sm">{lang === 'zh' ? card.zh : card.en}</p>
-              <div className="space-y-2">
-                <div>
-                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{card.optA}</span><span>{card.yes}%</span></div>
-                  <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full gradient-bg rounded-full" style={{ width: `${card.yes}%` }} /></div>
+          {previewCards.map((card, i) => {
+            const inner = (
+              <div className="card p-5 text-left hover:border-white/12 transition-colors h-full">
+                <p className="text-white font-medium mb-4 text-sm leading-snug line-clamp-2">{card.text}</p>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-400 mb-1"><span className="truncate pr-2">{card.optA}</span><span>{card.pctA}%</span></div>
+                    <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full gradient-bg rounded-full" style={{ width: `${card.pctA}%` }} /></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-400 mb-1"><span className="truncate pr-2">{card.optB}</span><span>{card.pctB}%</span></div>
+                    <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full bg-white/20 rounded-full" style={{ width: `${card.pctB}%` }} /></div>
+                  </div>
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{card.optB}</span><span>{card.no}%</span></div>
-                  <div className="h-1.5 bg-white/5 rounded-full"><div className="h-full bg-white/20 rounded-full" style={{ width: `${card.no}%` }} /></div>
-                </div>
+                <p className="text-gray-600 text-xs mt-3">{card.votes.toLocaleString()} votes</p>
               </div>
-              <p className="text-gray-600 text-xs mt-3">{card.votes} votes</p>
-            </div>
-          ))}
+            )
+            return card.id
+              ? <Link key={i} href={`/result/${card.id}`}>{inner}</Link>
+              : <div key={i}>{inner}</div>
+          })}
         </div>
       </section>
 
