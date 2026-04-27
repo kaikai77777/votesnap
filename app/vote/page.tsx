@@ -40,7 +40,7 @@ export default function VotePage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [lastVote, setLastVote] = useState<'A' | 'B' | null>(null)
+  const [lastVote, setLastVote] = useState<string | null>(null)
   const [showDemoEnd, setShowDemoEnd] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
