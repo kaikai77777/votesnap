@@ -57,15 +57,21 @@ export function VoteCard({ question, onVote, onSkip, current, total }: VoteCardP
   async function handleReport() {
     if (reported || !reportReason || reportSubmitting) return
     setReportSubmitting(true)
-    await fetch('/api/report', {
+    const anonymousId = typeof window !== 'undefined' ? localStorage.getItem('votesnap_anon_id') : null
+    const res = await fetch('/api/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question_id: question.id, reason: reportReason }),
+      body: JSON.stringify({ question_id: question.id, reason: reportReason, anonymous_id: anonymousId }),
     })
-    setReported(true)
-    setShowReport(false)
-    setReportReason('')
     setReportSubmitting(false)
+    if (res.ok) {
+      setReported(true)
+      setShowReport(false)
+      setReportReason('')
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(d.error ?? '檢舉失敗，請再試一次')
+    }
   }
 
   async function handleVote(v: string) {
