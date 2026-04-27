@@ -41,8 +41,14 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <LogoWordmark className="text-xl" />
           <div className="flex items-center gap-3">
-            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/trending" className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block">
+              {lang === 'zh' ? '排行榜' : 'Leaderboard'}
+            </Link>
+            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block">
               {lang === 'zh' ? '定價' : 'Pricing'}
+            </Link>
+            <Link href="/legal" className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block">
+              {lang === 'zh' ? '法律' : 'Legal'}
             </Link>
             <Link href="/login" className="btn-gradient px-5 py-2 text-sm">
               {t('land.cta1')}
