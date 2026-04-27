@@ -45,7 +45,7 @@ export default function PricingPage() {
         'Unlimited questions (free: 5/day)',
         'Demographic breakdown (age & gender)',
         'AI result insights (auto-generated)',
-        'Long-term polls: 3/7/30 days',
+        'Custom poll duration: 5 min – 7 days',
         'Extend poll time +30 min',
         'Priority feed exposure + Pro badge',
       ]
@@ -53,7 +53,7 @@ export default function PricingPage() {
         '無限發問（免費版每日 5 題）',
         '投票者人口統計（年齡、性別分析）',
         'AI 結果洞察（每題自動生成）',
-        '長期投票時效（3天 / 7天 / 30天）',
+        '自訂投票時效（5 分鐘 ～ 7 天任意設定）',
         '延長投票時間 +30 分鐘',
         '優先曝光排序 + Pro 徽章',
       ]

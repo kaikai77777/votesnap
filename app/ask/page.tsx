@@ -14,7 +14,8 @@ const DAILY_LIMIT = 5
 const MAX_CHARS = 120
 
 const FREE_DURATIONS = [15, 60, 1440]
-const PRO_DURATIONS = [4320, 10080, 43200]
+const PRO_MIN = 5
+const PRO_MAX = 10080 // 7 days in minutes
 
 const TEMPLATES_ZH = [
   { q: '要不要主動傳訊息給他？', a: '傳！', b: '等對方' },
@@ -49,6 +50,8 @@ export default function AskPage() {
   const [options, setOptions] = useState(['Yes', 'No'])
   const [category, setCategory] = useState('')
   const [duration, setDuration] = useState(1440)
+  const [customVal, setCustomVal] = useState(1)
+  const [customUnit, setCustomUnit] = useState<'min' | 'hr' | 'day'>('day')
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -336,21 +339,55 @@ export default function AskPage() {
                     {durationLabel(d, isEn)}
                   </button>
                 ))}
-                {PRO_DURATIONS.map((d) => (
-                  <button key={d} type="button"
-                    onClick={() => isPro ? setDuration(d) : router.push('/pricing')}
-                    className={`py-3 rounded-xl text-sm font-medium transition-all relative ${
-                      isPro && duration === d ? 'gradient-bg text-white'
-                      : isPro ? 'border border-white/10 text-gray-300 hover:border-white/20'
-                      : 'border border-white/6 text-gray-600'
-                    }`}>
-                    {durationLabel(d, isEn)}
-                    {!isPro && (
-                      <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full text-[9px] gradient-bg text-white font-bold leading-tight">PRO</span>
-                    )}
-                  </button>
-                ))}
               </div>
+
+              {isPro ? (
+                <div className="mt-3">
+                  <p className="text-xs text-violet-400 mb-2">✦ {isEn ? 'Custom duration (Pro)' : '自訂時效（Pro）'}</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={customVal}
+                      onChange={e => {
+                        const v = Math.max(1, Number(e.target.value))
+                        setCustomVal(v)
+                        const toMin = customUnit === 'min' ? v : customUnit === 'hr' ? v * 60 : v * 1440
+                        const clamped = Math.min(PRO_MAX, Math.max(PRO_MIN, toMin))
+                        setDuration(clamped)
+                      }}
+                      className="w-24 bg-[#1E1E1E] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm text-center focus:outline-none focus:border-violet-500/50"
+                    />
+                    <select
+                      value={customUnit}
+                      onChange={e => {
+                        const u = e.target.value as 'min' | 'hr' | 'day'
+                        setCustomUnit(u)
+                        const toMin = u === 'min' ? customVal : u === 'hr' ? customVal * 60 : customVal * 1440
+                        const clamped = Math.min(PRO_MAX, Math.max(PRO_MIN, toMin))
+                        setDuration(clamped)
+                      }}
+                      className="flex-1 bg-[#1E1E1E] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500/50"
+                    >
+                      <option value="min">{isEn ? 'min' : '分鐘'}</option>
+                      <option value="hr">{isEn ? 'hr' : '小時'}</option>
+                      <option value="day">{isEn ? 'day' : '天'}</option>
+                    </select>
+                    <span className="text-xs text-gray-600 shrink-0">
+                      → {durationLabel(Math.min(PRO_MAX, Math.max(PRO_MIN, duration)), isEn)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1.5">
+                    {isEn ? `Range: 5 min – 7 days` : `範圍：5 分鐘 ～ 7 天`}
+                  </p>
+                </div>
+              ) : (
+                <button type="button" onClick={() => router.push('/pricing')}
+                  className="mt-3 w-full py-2.5 rounded-xl border border-white/8 text-gray-600 text-xs hover:text-violet-400 hover:border-violet-500/30 transition-colors relative">
+                  {isEn ? 'Custom duration (up to 7 days)' : '自訂時效（最長 7 天）'}
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full text-[9px] gradient-bg text-white font-bold leading-tight">PRO</span>
+                </button>
+              )}
             </div>
           </div>
 
