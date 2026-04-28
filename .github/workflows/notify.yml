@@ -1,0 +1,16 @@
+name: Notify Question Expiry
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call notify API
+        run: |
+          curl -s -X GET "${{ secrets.SITE_URL }}/api/cron/notify" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -w "\nHTTP %{http_code}"
