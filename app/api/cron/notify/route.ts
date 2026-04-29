@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
   const now = new Date()
-  const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString()
+  const tenMinAgo = new Date(now.getTime() - 20 * 60 * 1000).toISOString()
 
   // Questions that expired in the last 10 min (called every 5 min via Supabase pg_cron)
   const { data: expired } = await supabase
