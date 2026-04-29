@@ -62,3 +62,54 @@ body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+/* ── Landing Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes orbSlow {
+  0%, 100% { opacity: 0.08; transform: translateX(-50%) scale(1); }
+  50%       { opacity: 0.15; transform: translateX(-50%) scale(1.12); }
+}
+
+@keyframes orbFast {
+  0%, 100% { opacity: 0.08; transform: translateX(-50%) translateY(0); }
+  50%       { opacity: 0.14; transform: translateX(-50%) translateY(-22px); }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+.animate-orb-slow {
+  animation: orbSlow 10s ease-in-out infinite;
+}
+
+.animate-orb-fast {
+  animation: orbFast 7s ease-in-out infinite;
+}
+
+.gradient-text-animated {
+  background: linear-gradient(135deg, #7C3AED, #EC4899, #F97316, #7C3AED);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 5s ease infinite;
+}
