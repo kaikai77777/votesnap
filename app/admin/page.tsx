@@ -711,7 +711,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold">自動發文題庫</h2>
-                <p className="text-xs text-gray-500 mt-0.5">共 {bankQuestions.length} 題 · 每天台灣 8am–10pm 每小時自動發 3 則</p>
+                <p className="text-xs text-gray-500 mt-0.5">共 {bankQuestions.length} 題 · 每天台灣 8am–10pm 每小時自動發 2 則</p>
               </div>
               <button
                 onClick={() => setShowBankForm(v => !v)}

@@ -58,7 +58,7 @@ export async function GET() {
   const normal = available.filter((q: { is_priority: boolean }) => !q.is_priority)
   normal.sort((a: { created_at: string }, b: { created_at: string }) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
   const sorted = [...priority, ...normal]
-  const nextQuestions = sorted.slice(0, 3)
+  const nextQuestions = sorted.slice(0, 2)
 
   return NextResponse.json({
     nextFireAt: getNextFireTime().toISOString(),
