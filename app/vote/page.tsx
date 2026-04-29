@@ -32,6 +32,20 @@ function getAnonymousId(): string {
   return id
 }
 
+function getLocalVotedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('votesnap_voted') || '[]'))
+  } catch { return new Set() }
+}
+
+function addLocalVotedId(id: string) {
+  try {
+    const s = getLocalVotedIds()
+    s.add(id)
+    localStorage.setItem('votesnap_voted', JSON.stringify(Array.from(s)))
+  } catch {}
+}
+
 export default function VotePage() {
   const { t } = useLang()
   const isEn = t('vote.loading') === 'Loading questions...'
@@ -65,7 +79,8 @@ export default function VotePage() {
 
       const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
       const { data, error } = await getActiveQuestionsForVoting(uid, uid ? null : anonId)
-      const real = (!error && data) ? data : []
+      const localVoted = getLocalVotedIds()
+      const real = (!error && data) ? data.filter(q => !localVoted.has(q.id)) : []
 
       setQuestions(showDemos ? [...demos, ...real] : real)
       setLoading(false)
@@ -91,10 +106,12 @@ export default function VotePage() {
       if (error) {
         if ((error as { code?: string }).code === '23505') {
           showToast(isEn ? 'Already voted on this one!' : '你已經投過這題了！')
+          addLocalVotedId(q.id)
         }
         setIndex(i => i + 1)
         return
       }
+      addLocalVotedId(q.id)
       fetch('/api/push/milestone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
