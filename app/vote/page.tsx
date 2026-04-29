@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getActiveQuestionsForVoting, castVote, getProfile } from '@/lib/queries'
+import { getProfile } from '@/lib/queries'
 import { Navbar } from '@/components/Navbar'
 import { VoteCard } from '@/components/VoteCard'
 import { OnboardingModal } from '@/components/OnboardingModal'
@@ -105,12 +105,18 @@ export default function VotePage() {
     if (!q) return
 
     if (!q.isDemo) {
-      const { error } = await castVote(q.id, vote, userId, userId ? null : anonymousId)
-      if (error) {
-        if ((error as { code?: string }).code === '23505') {
+      const res = await fetch('/api/votes/cast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: q.id, vote, anonymousId }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (json.code === '23505') {
           showToast(isEn ? 'Already voted on this one!' : '你已經投過這題了！')
           addLocalVotedId(q.id)
         }
+        // EXPIRED or other errors: silently skip
         setIndex(i => i + 1)
         return
       }
