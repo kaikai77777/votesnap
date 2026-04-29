@@ -70,35 +70,40 @@ export default function VotePage() {
       const uid = user?.id ?? null
       setUserId(uid)
 
-      let showDemos = false
-      if (uid) {
-        const demoKey = `demo_shown_${uid}`
-        const alreadySeenDemo = !!localStorage.getItem(demoKey)
-        if (!alreadySeenDemo) {
-          const { data: profile } = await getProfile(uid)
-          const isNewUser = !profile?.interests || profile.interests.length === 0
-          if (isNewUser) {
-            setShowOnboarding(true)
-            showDemos = true
-            localStorage.setItem(demoKey, '1')
+      try {
+        let showDemos = false
+        if (uid) {
+          const demoKey = `demo_shown_${uid}`
+          const alreadySeenDemo = !!localStorage.getItem(demoKey)
+          if (!alreadySeenDemo) {
+            const { data: profile } = await getProfile(uid)
+            const isNewUser = !profile?.interests || profile.interests.length === 0
+            if (isNewUser) {
+              setShowOnboarding(true)
+              showDemos = true
+              localStorage.setItem(demoKey, '1')
+            }
           }
         }
+
+        // Read language from localStorage directly (sync) to avoid re-running effect when isEn changes
+        const savedLang = localStorage.getItem('vs-lang')
+        const effectIsEn = savedLang === 'en'
+        const demos = (effectIsEn ? DEMO_EN : DEMO_ZH) as Question[]
+
+        const params = new URLSearchParams()
+        if (!uid && anonId) params.set('anon', anonId)
+        const res = await fetch(`/api/questions/feed?${params}`)
+        const feedData = res.ok ? await res.json() : []
+        const localVoted = getLocalVotedIds()
+        const real = Array.isArray(feedData) ? feedData.filter((q: Question) => !localVoted.has(q.id)) : []
+
+        setQuestions(showDemos ? [...demos, ...real] : real)
+      } catch (e) {
+        console.error('[vote] feed load error:', e)
+      } finally {
+        setLoading(false)
       }
-
-      // Read language from localStorage directly (sync) to avoid re-running effect when isEn changes
-      const savedLang = localStorage.getItem('vs-lang')
-      const effectIsEn = savedLang === 'en'
-      const demos = (effectIsEn ? DEMO_EN : DEMO_ZH) as Question[]
-
-      const params = new URLSearchParams()
-      if (!uid && anonId) params.set('anon', anonId)
-      const res = await fetch(`/api/questions/feed?${params}`)
-      const feedData = res.ok ? await res.json() : []
-      const localVoted = getLocalVotedIds()
-      const real = Array.isArray(feedData) ? feedData.filter((q: Question) => !localVoted.has(q.id)) : []
-
-      setQuestions(showDemos ? [...demos, ...real] : real)
-      setLoading(false)
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

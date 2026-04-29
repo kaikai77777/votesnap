@@ -31,7 +31,12 @@ export async function GET(req: NextRequest) {
     .order('expires_at', { ascending: true })
     .limit(20)
 
-  if (userId) query = query.neq('user_id', userId)
+  // Filter out user's own questions — but if the user IS the bot account,
+  // skip this filter so bot-posted questions remain visible to everyone
+  const botUserId = process.env.BOT_USER_ID
+  if (userId && userId !== botUserId) {
+    query = query.neq('user_id', userId)
+  }
   if (votedIds.length > 0) query = query.not('id', 'in', `(${votedIds.join(',')})`)
 
   const { data: activeQs, error } = await query
