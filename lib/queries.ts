@@ -221,7 +221,10 @@ export function isExpired(expiresAt: string) {
 }
 
 export function formatCountdown(expiresAt: string, isEn = false): string {
-  const diff = Math.max(0, new Date(expiresAt).getTime() - Date.now())
+  if (!expiresAt) return '──:──'
+  const ms = new Date(expiresAt).getTime()
+  if (isNaN(ms)) return '──:──'
+  const diff = Math.max(0, ms - Date.now())
   const totalSec = Math.floor(diff / 1000)
   const days = Math.floor(totalSec / 86400)
   const hours = Math.floor((totalSec % 86400) / 3600)

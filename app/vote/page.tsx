@@ -72,9 +72,17 @@ export default function VotePage() {
 
       let showDemos = false
       if (uid) {
-        const { data: profile } = await getProfile(uid)
-        const isNewUser = !profile?.interests || profile.interests.length === 0
-        if (isNewUser) { setShowOnboarding(true); showDemos = true }
+        const demoKey = `demo_shown_${uid}`
+        const alreadySeenDemo = !!localStorage.getItem(demoKey)
+        if (!alreadySeenDemo) {
+          const { data: profile } = await getProfile(uid)
+          const isNewUser = !profile?.interests || profile.interests.length === 0
+          if (isNewUser) {
+            setShowOnboarding(true)
+            showDemos = true
+            localStorage.setItem(demoKey, '1')
+          }
+        }
       }
 
       const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
