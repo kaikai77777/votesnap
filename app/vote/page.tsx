@@ -85,7 +85,11 @@ export default function VotePage() {
         }
       }
 
-      const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
+      // Read language from localStorage directly (sync) to avoid re-running effect when isEn changes
+      const savedLang = localStorage.getItem('vs-lang')
+      const effectIsEn = savedLang === 'en'
+      const demos = (effectIsEn ? DEMO_EN : DEMO_ZH) as Question[]
+
       const params = new URLSearchParams()
       if (!uid && anonId) params.set('anon', anonId)
       const res = await fetch(`/api/questions/feed?${params}`)
@@ -96,7 +100,8 @@ export default function VotePage() {
       setQuestions(showDemos ? [...demos, ...real] : real)
       setLoading(false)
     })
-  }, [isEn])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handlePushAccept() {
     setShowPushPrompt(false)
