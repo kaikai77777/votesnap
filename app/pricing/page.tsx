@@ -90,7 +90,7 @@ function PricingContent() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">{isEn ? 'Plan' : '方案'}</span>
-              <span className="text-white">Pro · {isEn ? 'One-time $4' : '一次買斷 $4'}</span>
+              <span className="text-white">Pro · {isEn ? 'One-time $199' : '一次買斷 $199'}</span>
             </div>
           </div>
 
@@ -173,7 +173,7 @@ function PricingContent() {
                 </div>
                 <p className="text-gray-500 text-sm mb-6">{t('price.proSub')}</p>
                 <div className="mb-2">
-                  <span className="text-5xl font-extrabold gradient-text">$4</span>
+                  <span className="text-5xl font-extrabold gradient-text">$199</span>
                   <span className="text-gray-500 text-sm ml-2">{isEn ? 'one-time' : '永久使用'}</span>
                 </div>
                 <p className="text-xs text-gray-600 mb-6">{isEn ? 'Pay once, use forever.' : '付一次，永久享有 Pro 功能。'}</p>
