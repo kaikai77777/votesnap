@@ -78,9 +78,12 @@ export default function VotePage() {
       }
 
       const demos = (isEn ? DEMO_EN : DEMO_ZH) as Question[]
-      const { data, error } = await getActiveQuestionsForVoting(uid, uid ? null : anonId)
+      const params = new URLSearchParams()
+      if (!uid && anonId) params.set('anon', anonId)
+      const res = await fetch(`/api/questions/feed?${params}`)
+      const feedData = res.ok ? await res.json() : []
       const localVoted = getLocalVotedIds()
-      const real = (!error && data) ? data.filter(q => !localVoted.has(q.id)) : []
+      const real = Array.isArray(feedData) ? feedData.filter((q: Question) => !localVoted.has(q.id)) : []
 
       setQuestions(showDemos ? [...demos, ...real] : real)
       setLoading(false)
