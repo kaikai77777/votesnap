@@ -178,22 +178,9 @@ function PricingContent() {
                 </div>
                 <p className="text-xs text-gray-600 mb-6">{isEn ? 'Pay once, use forever.' : '付一次，永久享有 Pro 功能。'}</p>
 
-                {loggedIn ? (
-                  <button
-                    onClick={handleCheckout}
-                    disabled={checking}
-                    className="w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium mb-6 hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {checking
-                      ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{isEn ? 'Redirecting...' : '跳轉中...'}</>
-                      : (isEn ? 'Upgrade to Pro →' : '立即升級 Pro →')
-                    }
-                  </button>
-                ) : (
-                  <Link href="/login" className="block w-full py-3.5 rounded-2xl gradient-bg text-center text-white font-medium mb-6 hover:opacity-90 transition-opacity">
-                    {isEn ? 'Login to upgrade →' : '登入後升級 →'}
-                  </Link>
-                )}
+                <div className="w-full py-3.5 rounded-2xl border border-violet-500/30 text-center text-violet-400 font-medium mb-6 text-sm bg-violet-500/5 cursor-default">
+                  {isEn ? '🚧 Coming Soon' : '🚧 即將推出'}
+                </div>
 
                 <ul className="space-y-3">
                   {PRO_FEATURES.map((f) => (
