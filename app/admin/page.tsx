@@ -27,6 +27,8 @@ interface Stats {
   totalUsers: number
   totalReports: number
   activeQuestions: number
+  todayRegistrations: number
+  onlineUsers: number
 }
 
 interface ReportedQuestion {
@@ -449,12 +451,37 @@ export default function AdminPage() {
         {tab === 'overview' && (
           <div>
             <h2 className="text-lg font-bold mb-4">平台數據</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+
+            {/* User stats row */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="card p-5 border-green-500/15">
+                <p className="text-xs text-gray-500 mb-1">今日新增用戶</p>
+                <p className="text-3xl font-bold text-green-400">{stats?.todayRegistrations ?? '—'}</p>
+                <p className="text-xs text-gray-600 mt-1">今天 0:00 起</p>
+              </div>
+              <div className="card p-5">
+                <p className="text-xs text-gray-500 mb-1">總註冊人數</p>
+                <p className="text-3xl font-bold text-white">{stats?.totalUsers ?? '—'}</p>
+                <p className="text-xs text-gray-600 mt-1">累積用戶</p>
+              </div>
+              <div className="card p-5 border-violet-500/20 relative overflow-hidden">
+                <div className="absolute top-3 right-3 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-xs text-green-400">即時</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-1">實時線上人數</p>
+                <p className="text-3xl font-bold gradient-text">{stats?.onlineUsers ?? '—'}</p>
+                <p className="text-xs text-gray-600 mt-1">5 分鐘內活躍</p>
+              </div>
+            </div>
+
+            {/* Platform stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[
                 { label: '總問題數', value: stats?.totalQuestions ?? '—', sub: `進行中 ${stats?.activeQuestions ?? 0}` },
                 { label: '總投票數', value: stats?.totalVotes?.toLocaleString() ?? '—', sub: '累積' },
-                { label: '總用戶數', value: stats?.totalUsers ?? '—', sub: '已註冊' },
                 { label: '待處理檢舉', value: stats?.totalReports ?? '—', sub: '需人工審核', warn: (stats?.totalReports ?? 0) > 0 },
+                { label: '題庫剩餘', value: autoStatus?.remaining ?? '—', sub: '未發出的題目' },
               ].map(({ label, value, sub, warn }) => (
                 <div key={label} className={`card p-5 ${warn ? 'border-red-500/20' : ''}`}>
                   <p className="text-xs text-gray-500 mb-1">{label}</p>

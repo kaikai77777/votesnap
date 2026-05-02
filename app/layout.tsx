@@ -3,6 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { LangToggle } from '@/components/LangToggle'
 import { PushInit } from '@/components/PushInit'
+import { Heartbeat } from '@/components/Heartbeat'
 
 export const metadata: Metadata = {
   title: 'votesnap — Can\'t decide? Snap a vote.',
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/logo-icon.png" />
       </head>
-      <body><Providers>{children}<LangToggle /><PushInit /></Providers></body>
+      <body><Providers>{children}<LangToggle /><PushInit /><Heartbeat /></Providers></body>
     </html>
   )
 }
