@@ -75,6 +75,12 @@ export default function AdminPage() {
   const [batchReason, setBatchReason] = useState('inappropriate')
   const [batchLoading, setBatchLoading] = useState(false)
 
+  // User list
+  const [users, setUsers] = useState<{ id: string; email: string; created_at: string; last_sign_in_at: string | null }[]>([])
+  const [usersOpen, setUsersOpen] = useState(false)
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [userSearch, setUserSearch] = useState('')
+
   // Question bank
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([])
   const [bankLoading, setBankLoading] = useState(false)
@@ -118,6 +124,13 @@ export default function AdminPage() {
     const timer = setInterval(update, 1000)
     return () => clearInterval(timer)
   }, [autoStatus?.nextFireAt])
+
+  async function loadUsers() {
+    setUsersLoading(true)
+    const data = await fetch('/api/admin/users').then(r => r.json()).catch(() => [])
+    setUsers(Array.isArray(data) ? data : [])
+    setUsersLoading(false)
+  }
 
   const loadBank = useCallback(async () => {
     setBankLoading(true)
@@ -503,6 +516,79 @@ export default function AdminPage() {
                   📋 所有問題
                 </button>
               </div>
+            </div>
+
+            {/* User list dropdown */}
+            <div className="card overflow-hidden mt-4">
+              <button
+                onClick={() => {
+                  const next = !usersOpen
+                  setUsersOpen(next)
+                  if (next && users.length === 0) loadUsers()
+                }}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/3 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-300">👤 註冊用戶清單</span>
+                  <span className="text-xs text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">
+                    {stats?.totalUsers ?? 0} 人
+                  </span>
+                </div>
+                <span className={`text-gray-500 text-sm transition-transform duration-200 ${usersOpen ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+
+              {usersOpen && (
+                <div className="border-t border-white/5 px-5 pb-4">
+                  <div className="flex items-center gap-2 mt-3 mb-3">
+                    <input
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      placeholder="搜尋 Email..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500/40"
+                    />
+                    <button onClick={loadUsers} className="text-xs text-gray-500 hover:text-white transition-colors px-3 py-2">
+                      ↻
+                    </button>
+                  </div>
+
+                  {usersLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="w-6 h-6 border-2 border-violet-500/40 border-t-violet-500 rounded-full animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
+                      {users
+                        .filter(u => !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase()))
+                        .map((u, i) => (
+                          <div key={u.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-white/4 transition-colors group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-xs text-gray-600 w-5 shrink-0">{i + 1}</span>
+                              <div className="w-7 h-7 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
+                                <span className="text-xs text-violet-400 font-medium">
+                                  {u.email.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="text-sm text-gray-200 truncate">{u.email}</span>
+                            </div>
+                            <div className="text-right shrink-0 ml-4">
+                              <p className="text-xs text-gray-500">
+                                {new Date(u.created_at).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })}
+                              </p>
+                              {u.last_sign_in_at && (
+                                <p className="text-xs text-gray-600">
+                                  登入 {new Date(u.last_sign_in_at).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      {users.filter(u => !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase())).length === 0 && (
+                        <p className="text-center text-gray-600 text-sm py-6">找不到符合的用戶</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
